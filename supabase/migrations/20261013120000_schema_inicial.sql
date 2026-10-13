@@ -10,8 +10,9 @@
 --   * Erros de regra de negócio: SQLSTATE P0001, "message" em pt-BR pronta para
 --     exibir e "hint" com um código estável (ex.: LIMITE_DIARIO) para o app
 --     decidir o que fazer. Lista completa no fim do arquivo.
---   * Área pública (anon) só lê quadras ativas, funcionamento, preços e feriados,
---     e chama horarios_do_dia() e criar_reserva(). Nunca lê nome/telefone.
+--   * Área pública (anon) só lê quadras ativas, funcionamento, preços, feriados e
+--     ocupacoes, e chama horarios_do_dia() e criar_reserva(). Nunca lê nome/telefone.
+--   * Tempo real (RNF08): a consulta pública assina a tabela ocupacoes no Realtime.
 --   * Área administrativa = usuário autenticado (único proprietário; cadastro
 --     público desabilitado no Supabase Auth).
 -- =============================================================================
@@ -77,17 +78,19 @@ create table public.horarios_funcionamento (
   check (fechamento > abertura)
 );
 
--- H4 / RF18-RF19. Tabela única de preços para todas as quadras.
+-- H4 / RF18-RF19. Tabela de preços de cada quadra.
 -- 'util' = segunda a sexta; 'fim_de_semana' = sábado, domingo e feriados (RF21).
 -- Escrita somente pela função salvar_faixas_preco(), que valida sobreposição e lacunas.
 create table public.faixas_preco (
   id           bigint generated always as identity primary key,
+  quadra_id    bigint        not null references public.quadras (id) on delete cascade,
   tipo_dia     text          not null check (tipo_dia in ('util', 'fim_de_semana')),
   hora_inicio  time          not null check (date_trunc('hour', hora_inicio) = hora_inicio),
   hora_fim     time          not null check (date_trunc('hour', hora_fim) = hora_fim),
   valor        numeric(10,2) not null check (valor > 0),
   check (hora_fim > hora_inicio)
 );
+create index faixas_preco_quadra_idx on public.faixas_preco (quadra_id, tipo_dia);
 
 -- H4 / RF21
 create table public.feriados (
@@ -137,6 +140,18 @@ create table public.log_cancelamentos (
   motivo         text
 );
 create index log_cancelamentos_reserva_idx on public.log_cancelamentos (reserva_id);
+
+-- H1 / RF03 / RNF08. Horários ocupados (reserva confirmada ou bloqueio), sem dados de
+-- clientes. Mantida pelos gatilhos abaixo; é a tabela que a consulta pública assina no
+-- Realtime. A chave primária também impede reserva e bloqueio no mesmo horário mesmo
+-- com requisições simultâneas.
+create table public.ocupacoes (
+  quadra_id    bigint not null references public.quadras (id),
+  data         date   not null,
+  hora_inicio  time   not null,
+  tipo         text   not null check (tipo in ('reserva', 'bloqueio')),
+  primary key (quadra_id, data, hora_inicio)
+);
 
 -- ---------------------------------------------------------------- regras em gatilhos
 
@@ -209,6 +224,46 @@ $$;
 create trigger bloqueios_validar before insert or update on public.bloqueios
   for each row execute function public.validar_bloqueio();
 
+-- Mantém public.ocupacoes. security definer: ninguém escreve nela diretamente.
+create function public.sincronizar_ocupacao()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_tipo text := case when tg_table_name = 'reservas' then 'reserva' else 'bloqueio' end;
+  v_ocupava boolean := tg_op in ('UPDATE', 'DELETE')
+                       and (v_tipo = 'bloqueio' or to_jsonb(old) ->> 'status' = 'confirmada');
+  v_ocupa   boolean := tg_op in ('INSERT', 'UPDATE')
+                       and (v_tipo = 'bloqueio' or to_jsonb(new) ->> 'status' = 'confirmada');
+begin
+  if v_ocupava and not (v_ocupa and (old.quadra_id, old.data, old.hora_inicio)
+                                   = (new.quadra_id, new.data, new.hora_inicio)) then
+    delete from public.ocupacoes o
+     where (o.quadra_id, o.data, o.hora_inicio) = (old.quadra_id, old.data, old.hora_inicio)
+       and o.tipo = v_tipo;
+  end if;
+  if v_ocupa and not (v_ocupava and (old.quadra_id, old.data, old.hora_inicio)
+                                  = (new.quadra_id, new.data, new.hora_inicio)) then
+    insert into public.ocupacoes (quadra_id, data, hora_inicio, tipo)
+    values (new.quadra_id, new.data, new.hora_inicio, v_tipo);
+  end if;
+  return null;
+exception when unique_violation then
+  if v_tipo = 'reserva' then
+    perform public.erro('HORARIO_OCUPADO', 'Este horário acabou de ser reservado.');
+  end if;
+  perform public.erro('HORARIO_RESERVADO',
+    'Existe um agendamento neste horário. Cancele a reserva do cliente antes de realizar o bloqueio.');
+  return null;
+end;
+$$;
+create trigger reservas_ocupacao after insert or update on public.reservas
+  for each row execute function public.sincronizar_ocupacao();
+create trigger bloqueios_ocupacao after insert or update or delete on public.bloqueios
+  for each row execute function public.sincronizar_ocupacao();
+
 -- ---------------------------------------------------------------- preço
 
 create function public.tipo_dia(p_data date)
@@ -223,22 +278,23 @@ as $$
   end
 $$;
 
--- Valor de 1 hora começando em p_hora na data p_data; null se não houver faixa.
-create function public.preco_horario(p_data date, p_hora time)
+-- Valor de 1 hora na quadra, começando em p_hora na data p_data; null se não houver faixa.
+create function public.preco_horario(p_quadra_id bigint, p_data date, p_hora time)
 returns numeric
 language sql
 stable
 as $$
   select fp.valor
     from public.faixas_preco fp
-   where fp.tipo_dia = public.tipo_dia(p_data)
+   where fp.quadra_id = p_quadra_id
+     and fp.tipo_dia = public.tipo_dia(p_data)
      and p_hora >= fp.hora_inicio
      and p_hora <  fp.hora_fim
 $$;
 
--- H4 / RF19. Substitui todas as faixas de um tipo de dia de uma vez.
+-- H4 / RF19. Substitui todas as faixas de um tipo de dia da quadra de uma vez.
 -- p_faixas: [{"hora_inicio": "08:00", "hora_fim": "18:00", "valor": 60}, ...]
-create function public.salvar_faixas_preco(p_tipo_dia text, p_faixas jsonb)
+create function public.salvar_faixas_preco(p_quadra_id bigint, p_tipo_dia text, p_faixas jsonb)
 returns setof public.faixas_preco
 language plpgsql
 security definer
@@ -251,6 +307,9 @@ begin
   perform public.exigir_proprietario();
   if p_tipo_dia not in ('util', 'fim_de_semana') then
     perform public.erro('TIPO_DIA_INVALIDO', 'Tipo de dia inválido.');
+  end if;
+  if not exists (select 1 from public.quadras q where q.id = p_quadra_id) then
+    perform public.erro('QUADRA_INDISPONIVEL', 'Quadra não encontrada.');
   end if;
 
   create temp table novas on commit drop as
@@ -274,30 +333,29 @@ begin
       to_char(v_conflito.b_ini, 'HH24"h"'), to_char(v_conflito.b_fim, 'HH24"h"')));
   end if;
 
-  -- Toda hora de funcionamento das quadras ativas nesses dias precisa de preço.
+  -- Toda hora de funcionamento da quadra nesses dias precisa de preço.
   -- Feriado pode cair em dia útil e usa a tabela de fim de semana, então essa
   -- tabela precisa cobrir o funcionamento de todos os dias.
-  select q.nome, h.hora
+  select h.hora
     into v_lacuna
-    from public.quadras q
-    join public.horarios_funcionamento hf on hf.quadra_id = q.id
+    from public.horarios_funcionamento hf
     cross join lateral (select make_time(g, 0, 0) as hora
                           from generate_series(extract(hour from hf.abertura)::int,
                                                extract(hour from hf.fechamento)::int - 1) g) h
-   where q.ativa
+   where hf.quadra_id = p_quadra_id
      and (p_tipo_dia = 'fim_de_semana' or hf.dia_semana between 1 and 5)
      and not exists (select 1 from novas n where h.hora >= n.hora_inicio and h.hora < n.hora_fim)
    order by h.hora
    limit 1;
   if found then
-    perform public.erro('FAIXA_LACUNA', format('O horário das %s da quadra %s ficou sem preço.',
-      to_char(v_lacuna.hora, 'HH24"h"'), v_lacuna.nome));
+    perform public.erro('FAIXA_LACUNA', format('O horário das %s ficou sem preço.',
+      to_char(v_lacuna.hora, 'HH24"h"')));
   end if;
 
-  delete from public.faixas_preco where tipo_dia = p_tipo_dia;
+  delete from public.faixas_preco where quadra_id = p_quadra_id and tipo_dia = p_tipo_dia;
   return query
-    insert into public.faixas_preco (tipo_dia, hora_inicio, hora_fim, valor)
-    select p_tipo_dia, hora_inicio, hora_fim, valor from novas order by hora_inicio
+    insert into public.faixas_preco (quadra_id, tipo_dia, hora_inicio, hora_fim, valor)
+    select p_quadra_id, p_tipo_dia, hora_inicio, hora_fim, valor from novas order by hora_inicio
     returning *;
 end;
 $$;
@@ -322,16 +380,12 @@ security definer
 set search_path = public
 as $$
   select q.id, q.nome, q.tipo_piso, h.hora,
-         public.preco_horario(p_data, h.hora),
+         public.preco_horario(q.id, p_data, h.hora),
          case
            when p_data + h.hora <= public.agora_local() then 'passado'
-           when exists (select 1 from public.reservas r
-                        where r.quadra_id = q.id and r.data = p_data
-                          and r.hora_inicio = h.hora and r.status = 'confirmada') then 'reservado'
-           when exists (select 1 from public.bloqueios b
-                        where b.quadra_id = q.id and b.data = p_data
-                          and b.hora_inicio = h.hora) then 'bloqueado'
-           when public.preco_horario(p_data, h.hora) is null then 'sem_preco'
+           when o.tipo = 'reserva'  then 'reservado'
+           when o.tipo = 'bloqueio' then 'bloqueado'
+           when public.preco_horario(q.id, p_data, h.hora) is null then 'sem_preco'
            else 'livre'
          end
     from public.quadras q
@@ -340,6 +394,8 @@ as $$
     cross join lateral (select make_time(g, 0, 0) as hora
                           from generate_series(extract(hour from hf.abertura)::int,
                                                extract(hour from hf.fechamento)::int - 1) g) h
+    left join public.ocupacoes o
+      on o.quadra_id = q.id and o.data = p_data and o.hora_inicio = h.hora
    where q.ativa
    order by q.nome, h.hora
 $$;
@@ -406,7 +462,7 @@ begin
     perform public.erro('HORARIO_BLOQUEADO', 'Este horário está bloqueado para manutenção.');
   end if;
 
-  v_valor := public.preco_horario(p_data, p_hora_inicio);
+  v_valor := public.preco_horario(p_quadra_id, p_data, p_hora_inicio);
   if v_valor is null then
     perform public.erro('SEM_PRECO', 'Este horário ainda não tem preço definido.');
   end if;
@@ -533,10 +589,13 @@ exception when others then
 end;
 $$;
 
--- Realtime para o painel do proprietário (RNF08). Respeita o RLS: anon não recebe nada.
+-- Realtime (RNF08). Respeita o RLS: o público recebe só as tabelas que pode ler
+-- (ocupacoes, quadras, funcionamento, preços, feriados); reservas e bloqueios só o proprietário.
 do $$
 begin
-  alter publication supabase_realtime add table public.reservas, public.bloqueios;
+  alter publication supabase_realtime add table
+    public.ocupacoes, public.quadras, public.horarios_funcionamento, public.faixas_preco,
+    public.feriados, public.reservas, public.bloqueios;
 exception when undefined_object then
   raise notice 'publicação supabase_realtime não existe (fora do Supabase)';
 end;
@@ -551,6 +610,7 @@ alter table public.feriados               enable row level security;
 alter table public.bloqueios              enable row level security;
 alter table public.reservas               enable row level security;
 alter table public.log_cancelamentos      enable row level security;
+alter table public.ocupacoes              enable row level security;
 
 -- Leitura pública do que a tela de consulta precisa.
 create policy "publico le quadras ativas" on public.quadras
@@ -561,6 +621,8 @@ create policy "publico le precos" on public.faixas_preco
   for select to anon using (true);
 create policy "publico le feriados" on public.feriados
   for select to anon using (true);
+create policy "todos leem ocupacoes" on public.ocupacoes
+  for select to anon, authenticated using (true);
 
 -- Proprietário: gestão completa do cadastro e da agenda.
 create policy "proprietario gerencia quadras" on public.quadras
@@ -579,7 +641,8 @@ create policy "proprietario le cancelamentos" on public.log_cancelamentos
   for select to authenticated using (true);
 
 -- Reservas, cancelamentos e preços só mudam pelas funções acima.
-revoke insert, update, delete on public.reservas, public.log_cancelamentos, public.faixas_preco
+revoke insert, update, delete on public.reservas, public.log_cancelamentos, public.faixas_preco,
+                                 public.ocupacoes
   from anon, authenticated;
 -- Quadras nunca são excluídas (histórico e relatórios); usa-se ativa = false.
 revoke delete on public.quadras from anon, authenticated;
@@ -589,9 +652,9 @@ revoke execute on all functions in schema public from public, anon, authenticate
 grant execute on function public.horarios_do_dia(date)                          to anon, authenticated;
 grant execute on function public.criar_reserva(bigint, date, time, text, text)  to anon, authenticated;
 grant execute on function public.cancelar_reserva(bigint, text)                 to authenticated;
-grant execute on function public.salvar_faixas_preco(text, jsonb)               to authenticated;
+grant execute on function public.salvar_faixas_preco(bigint, text, jsonb)       to authenticated;
 grant execute on function public.resumo_faturamento(date, date, text)           to authenticated;
-grant execute on function public.preco_horario(date, time)                      to anon, authenticated;
+grant execute on function public.preco_horario(bigint, date, time)              to anon, authenticated;
 grant execute on function public.tipo_dia(date)                                 to anon, authenticated;
 -- Usadas por gatilhos e políticas executados com o papel do usuário.
 grant execute on function public.erro(text, text), public.agora_local(),

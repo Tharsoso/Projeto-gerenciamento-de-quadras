@@ -12,10 +12,14 @@ select q.id, d, case when d in (0, 6) then '08:00'::time else '07:00'::time end,
                case when d in (0, 6) then '18:00'::time else '22:00'::time end
   from public.quadras q cross join generate_series(0, 6) d;
 
-insert into public.faixas_preco (tipo_dia, hora_inicio, hora_fim, valor) values
-  ('util',          '07:00', '18:00',  60.00),
-  ('util',          '18:00', '22:00',  90.00),
-  ('fim_de_semana', '07:00', '22:00', 100.00);  -- cobre feriados em dia útil
+-- Mesma tabela nas três quadras (exemplo da H4); fim de semana cobre 07h–22h por causa
+-- dos feriados em dia útil.
+insert into public.faixas_preco (quadra_id, tipo_dia, hora_inicio, hora_fim, valor)
+select q.id, f.tipo_dia, f.hora_inicio::time, f.hora_fim::time, f.valor
+  from public.quadras q
+ cross join (values ('util',          '07:00', '18:00',  60.00),
+                    ('util',          '18:00', '22:00',  90.00),
+                    ('fim_de_semana', '07:00', '22:00', 100.00)) f(tipo_dia, hora_inicio, hora_fim, valor);
 
 insert into public.feriados (data, descricao) values
   ('2026-10-12', 'Nossa Senhora Aparecida'),
