@@ -50,3 +50,7 @@ supabase/.temp/
 
 *.pdf
 *.docx
+
+# Chaves locais (use env.example.json como modelo)
+env.json
+!env.example.json
