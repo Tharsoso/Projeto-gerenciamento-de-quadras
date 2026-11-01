@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app_theme.dart';
 import 'screens/admin/login_prototipo_screen.dart';
 import 'screens/admin/painel_prototipo_screen.dart';
+import 'screens/intro_screen.dart';
 import 'screens/public/consulta_horarios_screen.dart';
 import 'screens/public/reserva_prototipo_screen.dart';
 
@@ -25,7 +26,7 @@ class GqtApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Reserva de quadras',
+      title: 'Ace Saibro · Reserva de quadras',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       localizationsDelegates: const [
@@ -36,11 +37,27 @@ class GqtApp extends StatelessWidget {
       supportedLocales: const [Locale('pt', 'BR')],
       initialRoute: '/',
       routes: {
-        '/': (_) => const ConsultaHorariosScreen(),
+        '/': (_) => const _Boot(),
+        '/home': (_) => const ConsultaHorariosScreen(),
         '/reserva': (_) => const ReservaPrototipoScreen(),
         '/admin/login': (_) => const LoginPrototipoScreen(),
         '/admin': (_) => const PainelPrototipoScreen(),
       },
+    );
+  }
+}
+
+class _Boot extends StatefulWidget {
+  const _Boot();
+  @override
+  State<_Boot> createState() => _BootState();
+}
+
+class _BootState extends State<_Boot> {
+  @override
+  Widget build(BuildContext context) {
+    return IntroScreen(
+      onDone: () => Navigator.of(context).pushReplacementNamed('/home'),
     );
   }
 }

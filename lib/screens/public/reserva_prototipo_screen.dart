@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../app_theme.dart';
 
 class ReservaPrototipoScreen extends StatefulWidget {
   const ReservaPrototipoScreen({super.key});
@@ -10,12 +12,12 @@ class ReservaPrototipoScreen extends StatefulWidget {
 class _ReservaPrototipoScreenState extends State<ReservaPrototipoScreen> {
   final _form = GlobalKey<FormState>();
   final _nome = TextEditingController();
-  final _telefone = TextEditingController();
+  final _tel = TextEditingController();
 
   @override
   void dispose() {
     _nome.dispose();
-    _telefone.dispose();
+    _tel.dispose();
     super.dispose();
   }
 
@@ -28,74 +30,314 @@ class _ReservaPrototipoScreenState extends State<ReservaPrototipoScreen> {
     final valor = args['valor'] as double?;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reservar horário')),
+      backgroundColor: AppColors.bg,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'RESERVAR HORÁRIO',
+          style: AppTheme.display(
+            size: 20,
+            color: AppColors.ink,
+            letterSpacing: 1.5,
+            height: 1,
+          ),
+        ),
+      ),
       body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Form(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Ticket(
+                  quadra: quadra,
+                  hora: hora,
+                  data: data,
+                  valor: valor,
+                ),
+                const SizedBox(height: 24),
+                Form(
                   key: _form,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(quadra, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      Text('${_fmtData(data)}  ·  $hora  ·  ${valor != null ? "R\$ ${valor.toStringAsFixed(2)}" : "—"}'),
-                      const SizedBox(height: 20),
+                      _Label('NOME COMPLETO'),
                       TextFormField(
                         controller: _nome,
-                        decoration: const InputDecoration(labelText: 'Nome completo'),
-                        textInputAction: TextInputAction.next,
-                        validator: (v) =>
-                            (v == null || v.trim().length < 3) ? 'Informe o nome completo.' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _telefone,
                         decoration: const InputDecoration(
-                          labelText: 'Telefone (DDD + 9XXXXXXXX)',
-                          hintText: '31999990000',
+                            hintText: 'Ex.: Maria da Silva'),
+                        validator: (v) =>
+                            (v == null || v.trim().length < 3)
+                                ? 'Informe o nome completo.'
+                                : null,
+                      ),
+                      const SizedBox(height: 18),
+                      _Label('TELEFONE (WHATSAPP)'),
+                      TextFormField(
+                        controller: _tel,
+                        decoration: const InputDecoration(
+                          hintText: '(31) 99999-0000',
                         ),
                         keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          _PhoneFormatter(),
+                        ],
                         validator: (v) {
                           final s = (v ?? '').replaceAll(RegExp(r'\D'), '');
                           if (!RegExp(r'^[1-9]{2}9[0-9]{8}$').hasMatch(s)) {
-                            return 'Formato: DDD + 9 e mais 8 dígitos.';
+                            return 'DDD + 9 + 8 dígitos. Ex.: (31) 99999-0000';
                           }
                           return null;
                         },
                       ),
-                      const SizedBox(height: 20),
-                      FilledButton.icon(
-                        onPressed: () {
-                          if (_form.currentState?.validate() ?? false) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Protótipo: envio real na atividade 4.2.')),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('Confirmar reserva'),
+                      const SizedBox(height: 8),
+                      Text(
+                        'DDD + 9 + 8 dígitos. Ex.: 31999990000',
+                        style: TextStyle(
+                            fontSize: 12.5, color: AppColors.muted),
                       ),
-                      TextButton(
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        height: 64,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            if (_form.currentState?.validate() ?? false) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: AppColors.ink,
+                                  content: Text(
+                                    'Protótipo: envio real na atividade 4.2.',
+                                    style: AppTheme.mono(
+                                      size: 13,
+                                      color: Colors.white,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: Text(
+                            'CONFIRMAR RESERVA',
+                            style: AppTheme.display(
+                              size: 22,
+                              color: Colors.white,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
                         child: const Text('Voltar'),
                       ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  String _fmtData(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+class _Label extends StatelessWidget {
+  final String text;
+  const _Label(this.text);
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 7, left: 4),
+        child: Text(
+          text,
+          style: AppTheme.mono(
+            size: 12,
+            color: AppColors.muted,
+            letterSpacing: 1.4,
+            weight: FontWeight.w700,
+          ),
+        ),
+      );
+}
+
+class _Ticket extends StatelessWidget {
+  final String quadra;
+  final String hora;
+  final DateTime data;
+  final double? valor;
+  const _Ticket({
+    required this.quadra,
+    required this.hora,
+    required this.data,
+    required this.valor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const dows = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+    final dSemana = dows[data.weekday % 7];
+    final dBr =
+        '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.greenDark,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.greenDark.withValues(alpha: 0.3),
+            offset: const Offset(0, 18),
+            blurRadius: 40,
+          ),
+        ],
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(22, 22, 20, 22),
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.28),
+                    width: 2,
+                    style: BorderStyle.solid,
+                  ),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'HORA',
+                    style: AppTheme.mono(
+                      size: 10,
+                      color: Colors.white.withValues(alpha: 0.65),
+                      letterSpacing: 2.4,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    hora,
+                    style: AppTheme.display(
+                      size: 70,
+                      color: AppColors.ball,
+                      height: 0.82,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      quadra.toUpperCase(),
+                      style: AppTheme.display(
+                        size: 32,
+                        color: Colors.white,
+                        letterSpacing: 1,
+                        height: 0.9,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _row('DATA', '$dSemana · $dBr'),
+                    const SizedBox(height: 8),
+                    _row('DURAÇÃO', '1 hora'),
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'VALOR',
+                          style: AppTheme.mono(
+                            size: 10,
+                            color: Colors.white.withValues(alpha: 0.65),
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          valor != null
+                              ? 'R\$ ${valor!.toStringAsFixed(2)}'
+                              : '—',
+                          style: AppTheme.display(
+                            size: 32,
+                            color: AppColors.ball,
+                            letterSpacing: 0.5,
+                            height: 0.9,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _row(String k, String v) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 78,
+            child: Text(
+              k,
+              style: AppTheme.mono(
+                size: 10,
+                color: Colors.white.withValues(alpha: 0.65),
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              v,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      );
+}
+
+class _PhoneFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final d = newValue.text.replaceAll(RegExp(r'\D'), '');
+    final s = d.substring(0, d.length > 11 ? 11 : d.length);
+    final b = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i == 0) b.write('(');
+      if (i == 2) b.write(') ');
+      if (i == 7) b.write('-');
+      b.write(s[i]);
+    }
+    return TextEditingValue(
+      text: b.toString(),
+      selection: TextSelection.collapsed(offset: b.length),
+    );
+  }
 }
