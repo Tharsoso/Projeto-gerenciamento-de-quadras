@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'admin/quadras_page.dart';
+import 'admin/quadras_repositorio.dart';
 import 'app_theme.dart';
 import 'screens/admin/login_prototipo_screen.dart';
 import 'screens/admin/painel_prototipo_screen.dart';
@@ -40,6 +42,11 @@ class GqtApp extends StatelessWidget {
         '/reserva': (_) => const ReservaPrototipoScreen(),
         '/admin/login': (_) => const LoginPrototipoScreen(),
         '/admin': (_) => const PainelPrototipoScreen(),
+        // 5.2. Gravar exige login (RLS): até o login da 5.1 entrar aqui, sem sessão o
+        // banco só devolve as quadras ativas e recusa salvar.
+        '/admin/quadras': (_) => _supabaseUrl.isEmpty
+            ? const Scaffold(body: Center(child: Text('Supabase não configurado (env.json).')))
+            : QuadrasPage(repositorio: SupabaseQuadrasRepositorio(Supabase.instance.client)),
       },
     );
   }

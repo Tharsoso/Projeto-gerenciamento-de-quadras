@@ -6,7 +6,7 @@ class PainelPrototipoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final itens = <_ItemMenu>[
-      _ItemMenu(Icons.sports_tennis, 'Quadras', 'Cadastro e inativação (H8)'),
+      _ItemMenu(Icons.sports_tennis, 'Quadras', 'Cadastro e inativação (H8)', '/admin/quadras'),
       _ItemMenu(Icons.schedule, 'Horários de funcionamento', 'Abertura e fechamento (H9)'),
       _ItemMenu(Icons.attach_money, 'Preços por faixa', 'Dia útil / fim de semana (H4)'),
       _ItemMenu(Icons.event_busy, 'Bloqueios', 'Manutenção da quadra (H5)'),
@@ -49,7 +49,8 @@ class _ItemMenu {
   final IconData icone;
   final String titulo;
   final String descricao;
-  _ItemMenu(this.icone, this.titulo, this.descricao);
+  final String? rota;
+  _ItemMenu(this.icone, this.titulo, this.descricao, [this.rota]);
 }
 
 class _CardMenu extends StatelessWidget {
@@ -61,6 +62,10 @@ class _CardMenu extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () {
+          if (item.rota != null) {
+            Navigator.of(context).pushNamed(item.rota!);
+            return;
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('${item.titulo}: tela a ser implementada.')),
           );
