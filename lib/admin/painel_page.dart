@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../auth/autenticacao.dart';
 
@@ -22,7 +23,21 @@ class PainelPage extends StatelessWidget {
           ),
         ],
       ),
-      body: const Center(child: Text('Agenda do dia (em construção)')),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Agenda do dia (em construção)'),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              key: const Key('painel-quadras'),
+              onPressed: () => context.go('/admin/quadras'),
+              icon: const Icon(Icons.sports_tennis),
+              label: const Text('Quadras'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
