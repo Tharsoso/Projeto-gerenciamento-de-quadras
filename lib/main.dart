@@ -1,53 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'admin/quadras_page.dart';
-import 'admin/quadras_repositorio.dart';
+import 'app.dart';
 import 'app_theme.dart';
-import 'screens/admin/login_prototipo_screen.dart';
-import 'screens/admin/painel_prototipo_screen.dart';
-import 'screens/public/consulta_horarios_screen.dart';
-import 'screens/public/reserva_prototipo_screen.dart';
+import 'auth/autenticacao.dart';
+import 'screens/intro_screen.dart';
 
 const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (_supabaseUrl.isNotEmpty && _supabaseAnonKey.isNotEmpty) {
-    await Supabase.initialize(url: _supabaseUrl, publishableKey: _supabaseAnonKey);
+  if (_supabaseUrl.isEmpty || _supabaseAnonKey.isEmpty) {
+    runApp(const _SemSupabase());
+    return;
   }
-  runApp(const GqtApp());
+  await Supabase.initialize(url: _supabaseUrl, publishableKey: _supabaseAnonKey);
+  runApp(_Entrada(auth: SupabaseAutenticacao(Supabase.instance.client.auth)));
 }
 
-class GqtApp extends StatelessWidget {
-  const GqtApp({super.key});
+/// O [App] já abre por baixo; a intro (vídeo do saque do protótipo) cobre a tela e sobe
+/// no fim, revelando a home.
+class _Entrada extends StatefulWidget {
+  const _Entrada({required this.auth});
+
+  final Autenticacao auth;
+
+  @override
+  State<_Entrada> createState() => _EntradaState();
+}
+
+class _EntradaState extends State<_Entrada> {
+  late final App _app = App(auth: widget.auth);
+  bool _introFeita = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _app,
+          if (!_introFeita) IntroScreen(onDone: () => setState(() => _introFeita = true)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SemSupabase extends StatelessWidget {
+  const _SemSupabase();
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Reserva de quadras',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [Locale('pt', 'BR')],
-      initialRoute: '/',
-      routes: {
-        '/': (_) => const ConsultaHorariosScreen(),
-        '/reserva': (_) => const ReservaPrototipoScreen(),
-        '/admin/login': (_) => const LoginPrototipoScreen(),
-        '/admin': (_) => const PainelPrototipoScreen(),
-        // 5.2. Gravar exige login (RLS): até o login da 5.1 entrar aqui, sem sessão o
-        // banco só devolve as quadras ativas e recusa salvar.
-        '/admin/quadras': (_) => _supabaseUrl.isEmpty
-            ? const Scaffold(body: Center(child: Text('Supabase não configurado (env.json).')))
-            : QuadrasPage(repositorio: SupabaseQuadrasRepositorio(Supabase.instance.client)),
-      },
+      home: const Scaffold(
+        body: Center(child: Text('Supabase não configurado (env.json).')),
+      ),
     );
   }
 }

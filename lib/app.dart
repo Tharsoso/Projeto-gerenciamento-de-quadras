@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'admin/painel_page.dart';
 import 'admin/quadras_page.dart';
 import 'admin/quadras_repositorio.dart';
+import 'app_theme.dart';
 import 'auth/autenticacao.dart';
 import 'auth/controle_inatividade.dart';
 import 'auth/login_page.dart';
-import 'publico/inicio_page.dart';
+import 'screens/public/consulta_horarios_screen.dart';
+import 'screens/public/reserva_prototipo_screen.dart';
 
 class App extends StatefulWidget {
   const App({
@@ -33,7 +36,13 @@ class _AppState extends State<App> {
     refreshListenable: widget.auth,
     redirect: _redirecionar,
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const InicioPage()),
+      GoRoute(path: '/', builder: (context, state) => const ConsultaHorariosScreen()),
+      GoRoute(
+        path: '/reserva',
+        builder: (context, state) => ReservaPrototipoScreen(
+          args: (state.extra as Map<String, dynamic>?) ?? const {},
+        ),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => LoginPage(
@@ -86,9 +95,15 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Quadras de Tênis',
+      title: 'Ace Saibro · Reserva de quadras',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.green)),
+      theme: AppTheme.light(),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('pt', 'BR')],
       routerConfig: _router,
     );
   }
