@@ -159,7 +159,7 @@ class _ConsultaHorariosScreenState extends State<ConsultaHorariosScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                   sliver: SliverList.separated(
                     itemCount: entries.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
+                    separatorBuilder: (_, _) => const SizedBox(height: 16),
                     itemBuilder: (_, i) => _CardQuadra(
                       nome: entries[i].key,
                       slots: entries[i].value,
@@ -512,7 +512,7 @@ class _PulseDotState extends State<_PulseDot>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _c,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = _c.value;
         return SizedBox(
           width: 20,
