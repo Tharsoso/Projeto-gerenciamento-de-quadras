@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'admin/painel_page.dart';
 import 'admin/quadras_page.dart';
 import 'admin/quadras_repositorio.dart';
+import 'app_theme.dart';
 import 'auth/autenticacao.dart';
 import 'auth/controle_inatividade.dart';
 import 'auth/login_page.dart';
-import 'publico/inicio_page.dart';
+import 'publico/reservas_repositorio.dart';
+import 'screens/public/consulta_horarios_screen.dart';
+import 'screens/public/reserva_screen.dart';
+import 'screens/public/sucesso_screen.dart';
 
 class App extends StatefulWidget {
   const App({
@@ -16,6 +21,7 @@ class App extends StatefulWidget {
     required this.auth,
     this.limiteInatividade = limiteInatividadePadrao,
     this.quadras,
+    this.reservas,
   });
 
   final Autenticacao auth;
@@ -23,6 +29,9 @@ class App extends StatefulWidget {
 
   /// Acesso às quadras (5.2). Sem ele, usa o Supabase já inicializado.
   final QuadrasRepositorio? quadras;
+
+  /// Criação de reservas (4.2). Sem ele, usa o Supabase já inicializado.
+  final ReservasRepositorio? reservas;
 
   @override
   State<App> createState() => _AppState();
@@ -33,7 +42,23 @@ class _AppState extends State<App> {
     refreshListenable: widget.auth,
     redirect: _redirecionar,
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const InicioPage()),
+      GoRoute(path: '/', builder: (context, state) => const ConsultaHorariosScreen()),
+      // Estas duas só existem vindo do fluxo: ao recarregar a página o `extra` se perde.
+      GoRoute(
+        path: '/reserva',
+        redirect: (context, state) => state.extra is HorarioEscolhido ? null : '/',
+        builder: (context, state) => ReservaScreen(
+          horario: state.extra! as HorarioEscolhido,
+          repositorio:
+              widget.reservas ?? SupabaseReservasRepositorio(Supabase.instance.client),
+        ),
+      ),
+      GoRoute(
+        path: '/sucesso',
+        redirect: (context, state) => state.extra is ReservaConfirmada ? null : '/',
+        builder: (context, state) =>
+            SucessoScreen(reserva: state.extra! as ReservaConfirmada),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => LoginPage(
@@ -86,9 +111,15 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Quadras de Tênis',
+      title: 'Ace Saibro · Reserva de quadras',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.green)),
+      theme: AppTheme.light(),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('pt', 'BR')],
       routerConfig: _router,
     );
   }
