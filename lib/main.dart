@@ -14,7 +14,7 @@ const _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (_supabaseUrl.isNotEmpty && _supabaseAnonKey.isNotEmpty) {
-    await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey);
+    await Supabase.initialize(url: _supabaseUrl, publishableKey: _supabaseAnonKey);
   }
   runApp(const GqtApp());
 }
