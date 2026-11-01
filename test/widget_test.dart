@@ -11,7 +11,7 @@ void main() {
       home: const LoginPrototipoScreen(),
     ));
 
-    await tester.tap(find.text('Entrar'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Entrar'));
     await tester.pump();
 
     expect(find.text('Informe um e-mail válido.'), findsOneWidget);
