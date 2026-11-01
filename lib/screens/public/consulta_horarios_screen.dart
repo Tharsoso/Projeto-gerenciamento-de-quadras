@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../app_theme.dart';
+import '../../formatos.dart';
 import '../../models/horario_slot.dart';
+import '../../publico/reservas_repositorio.dart';
 import '../../services/quadras_service.dart';
 import '../intro_screen.dart';
 import '../widgets/tennis_ball.dart';
@@ -958,18 +960,21 @@ class _SlotChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final cfg = _config(slot.status);
     final preco = slot.valor != null
-        ? 'R\$ ${slot.valor!.toStringAsFixed(2)}'
+        ? formatarReal(slot.valor!)
         : '—';
     final isLivre = slot.livre;
     return InkWell(
       onTap: isLivre
-          ? () => context.push('/reserva', extra: {
-                'quadraId': slot.quadraId,
-                'quadra': quadra,
-                'data': dia,
-                'hora': slot.horaInicio,
-                'valor': slot.valor,
-              })
+          ? () => context.push(
+                '/reserva',
+                extra: HorarioEscolhido(
+                  quadraId: slot.quadraId,
+                  quadra: quadra,
+                  data: dia,
+                  hora: slot.horaInicio,
+                  valor: slot.valor,
+                ),
+              )
           : null,
       borderRadius: BorderRadius.circular(16),
       child: Container(

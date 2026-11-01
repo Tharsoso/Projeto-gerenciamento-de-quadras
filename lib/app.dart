@@ -10,8 +10,10 @@ import 'app_theme.dart';
 import 'auth/autenticacao.dart';
 import 'auth/controle_inatividade.dart';
 import 'auth/login_page.dart';
+import 'publico/reservas_repositorio.dart';
 import 'screens/public/consulta_horarios_screen.dart';
-import 'screens/public/reserva_prototipo_screen.dart';
+import 'screens/public/reserva_screen.dart';
+import 'screens/public/sucesso_screen.dart';
 
 class App extends StatefulWidget {
   const App({
@@ -19,6 +21,7 @@ class App extends StatefulWidget {
     required this.auth,
     this.limiteInatividade = limiteInatividadePadrao,
     this.quadras,
+    this.reservas,
   });
 
   final Autenticacao auth;
@@ -26,6 +29,9 @@ class App extends StatefulWidget {
 
   /// Acesso às quadras (5.2). Sem ele, usa o Supabase já inicializado.
   final QuadrasRepositorio? quadras;
+
+  /// Criação de reservas (4.2). Sem ele, usa o Supabase já inicializado.
+  final ReservasRepositorio? reservas;
 
   @override
   State<App> createState() => _AppState();
@@ -37,11 +43,21 @@ class _AppState extends State<App> {
     redirect: _redirecionar,
     routes: [
       GoRoute(path: '/', builder: (context, state) => const ConsultaHorariosScreen()),
+      // Estas duas só existem vindo do fluxo: ao recarregar a página o `extra` se perde.
       GoRoute(
         path: '/reserva',
-        builder: (context, state) => ReservaPrototipoScreen(
-          args: (state.extra as Map<String, dynamic>?) ?? const {},
+        redirect: (context, state) => state.extra is HorarioEscolhido ? null : '/',
+        builder: (context, state) => ReservaScreen(
+          horario: state.extra! as HorarioEscolhido,
+          repositorio:
+              widget.reservas ?? SupabaseReservasRepositorio(Supabase.instance.client),
         ),
+      ),
+      GoRoute(
+        path: '/sucesso',
+        redirect: (context, state) => state.extra is ReservaConfirmada ? null : '/',
+        builder: (context, state) =>
+            SucessoScreen(reserva: state.extra! as ReservaConfirmada),
       ),
       GoRoute(
         path: '/login',
