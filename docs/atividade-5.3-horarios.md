@@ -1,7 +1,7 @@
 # Atividade 5.3 · Horários de funcionamento por quadra (H9 · RF13)
 
 Autor: Davi · Branch: `feat/5.3-horarios` (criada a partir da `feat/5.2-quadras`) ·
-Ligar ao login: mesmo passo a passo de [`atividade-5.2-quadras.md`](atividade-5.2-quadras.md).
+Login: já ligado no `main` pelo João (PR #6), então a tela grava no banco com o proprietário logado.
 
 ## 1. O que foi feito
 
@@ -16,8 +16,8 @@ O visual segue a tela "Horários" do protótipo Ace Saibro.
 | `lib/models/funcionamento.dart` | `Intervalo`, `Semana`, `ReservaFutura` e `reservasForaDoHorario` (regra do aviso) |
 | `lib/tema/ace_componentes.dart` | Componentes do protótipo, agora compartilhados entre 5.2 e 5.3 (`AceChip`, `AceAlerta`, `AceEstilo`, `aceAviso`, `aceBarraAdmin`) |
 | `test/horarios_test.dart` | 12 testes (regra do aviso, salvar, fechar dia, erro, celular 360px) |
-| `lib/app.dart` / `lib/main.dart` | Rota `/admin/horarios` (no `app.dart`, protegida pelo login) |
-| Painéis | Atalho "Horários de funcionamento" nos dois painéis |
+| `lib/app.dart` | Rota `/admin/horarios` dentro do `ShellRoute` (exige login) |
+| `lib/admin/painel_page.dart` | O módulo "HORÁRIOS" do painel deixou de ser "Em breve" e abre a tela |
 
 ## 2. Conversa com o banco
 
@@ -46,13 +46,12 @@ Só são gravadas as quadras que mudaram (o botão mostra quantas).
 - Quadra recém-criada na 5.2 não tem linha nenhuma, ou seja, fica fechada em todos os dias e
   não aparece na consulta. O cartão avisa isso.
 
-## 4. Login (o mesmo da 5.2)
+## 4. Login
 
-Sem sessão do Supabase Auth, o RLS deixa só **ler** `horarios_funcionamento`. Salvar
-devolve "Sua sessão expirou", e a lista de `reservas` vem vazia, então o aviso de impacto
-não aparece. Mas como salvar também falha, nada é gravado sem o aviso. Tudo volta ao normal
-quando o `main.dart` rodar o `App` com `SupabaseAutenticacao` (ver a seção 4 da 5.2). Para
-testar dentro do `App`: `App(auth: ..., horarios: HorariosFalsos(...))`.
+Sem sessão do Supabase Auth, o RLS deixa só **ler** `horarios_funcionamento`: salvar
+devolve "Sua sessão expirou" e leva para o login. Com o `main.dart` atual (que roda o `App`
+com `SupabaseAutenticacao`), basta entrar como proprietário. Para testar dentro do `App`:
+`App(auth: ..., horarios: HorariosFalsos(...))` (classe em `test/horarios_test.dart`).
 
 ## 5. Como conferir
 
