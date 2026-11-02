@@ -14,6 +14,8 @@ abstract final class AceCores {
   static const superficie = Color(0xFFF5F8F4); // --surf
   static const vermelho = Color(0xFFC62828); // --red
   static const vermelhoClaro = Color(0xFFFDECEA); // --red-t
+  static const marrom = Color(0xFF6D4C41); // --brown (bloqueio de manutenção)
+  static const marromClaro = Color(0xFFEFEBE9); // --brown-t
   static const cinza = Color(0xFF8E978F); // --gray
   static const cinzaClaro = Color(0xFFECEFEC); // --gray-t
 }
