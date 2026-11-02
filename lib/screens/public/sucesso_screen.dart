@@ -1,16 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_theme.dart';
 import '../../formatos.dart';
+import '../../publico/comprovante_whatsapp.dart';
 import '../../publico/reservas_repositorio.dart';
 import '../widgets/ticket_reserva.dart';
 
-/// Confirmação da reserva (4.2). O comprovante pelo WhatsApp entra na 4.4.
+/// Abre um link fora do app; devolve `false` se não conseguir.
+typedef AbrirLink = Future<bool> Function(Uri link);
+
+Future<bool> _abrirNoNavegador(Uri link) =>
+    launchUrl(link, mode: LaunchMode.externalApplication);
+
+/// Confirmação da reserva (4.2) com o comprovante pelo WhatsApp (4.4).
 class SucessoScreen extends StatelessWidget {
-  const SucessoScreen({super.key, required this.reserva});
+  const SucessoScreen({super.key, required this.reserva, this.abrirLink = _abrirNoNavegador});
 
   final ReservaConfirmada reserva;
+
+  /// Injetável nos testes, para não abrir o WhatsApp de verdade.
+  final AbrirLink abrirLink;
+
+  Future<void> _enviarComprovante(BuildContext context) async {
+    var abriu = false;
+    try {
+      abriu = await abrirLink(linkComprovante(reserva));
+    } on Exception {
+      abriu = false;
+    }
+    if (abriu || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Não foi possível abrir o WhatsApp. Anote o código da reserva.'),
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +120,27 @@ class SucessoScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 22),
+                SizedBox(
+                  height: 64,
+                  child: FilledButton.icon(
+                    key: const Key('sucesso-whatsapp'),
+                    onPressed: () => _enviarComprovante(context),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF25D366),
+                      foregroundColor: const Color(0xFF06301A),
+                    ),
+                    icon: const Icon(Icons.chat_rounded),
+                    label: Text(
+                      'COMPROVANTE NO WHATSAPP',
+                      style: AppTheme.display(
+                        size: 21,
+                        color: const Color(0xFF06301A),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 OutlinedButton(
                   key: const Key('sucesso-voltar'),
                   onPressed: () => context.go('/'),
