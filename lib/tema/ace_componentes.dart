@@ -59,7 +59,14 @@ class AceChip extends StatelessWidget {
           Container(
               width: 8, height: 8, decoration: BoxDecoration(color: cor, shape: BoxShape.circle)),
           const SizedBox(width: 7),
-          Text(texto, style: TextStyle(color: cor, fontSize: 12, fontWeight: FontWeight.w600)),
+          // Flexible: em tela estreita o chip encolhe com reticências em vez de estourar.
+          Flexible(
+            child: Text(texto,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: TextStyle(color: cor, fontSize: 12, fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );
