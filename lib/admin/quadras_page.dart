@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/quadra.dart';
+import '../tema/ace_componentes.dart';
 import '../tema/ace_cores.dart';
 import 'quadras_repositorio.dart';
 
@@ -75,41 +76,13 @@ class _QuadrasPageState extends State<QuadrasPage> {
         : 'Quadra atualizada.');
   }
 
-  void _avisar(String texto) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AceCores.tinta,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Row(children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: const BoxDecoration(color: AceCores.bola, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(texto)),
-        ]),
-      ));
-  }
+  void _avisar(String texto) => aceAviso(context, texto);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: AceCores.verdeEscuro,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        toolbarHeight: 64,
-        leading: IconButton(
-          tooltip: 'Voltar ao painel',
-          icon: const Icon(Icons.arrow_back),
-          onPressed: widget.aoVoltar ?? () => Navigator.of(context).maybePop(),
-        ),
-        title: const Text('QUADRAS', style: _Estilo.barra),
-      ),
+      appBar: aceBarraAdmin(context, 'Quadras', aoVoltar: widget.aoVoltar),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('quadras-nova'),
         onPressed: _quadras == null ? null : () => _abrirFormulario(),
@@ -117,7 +90,7 @@ class _QuadrasPageState extends State<QuadrasPage> {
         foregroundColor: AceCores.tinta,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         icon: const Icon(Icons.add, size: 26),
-        label: const Text('NOVA QUADRA', style: _Estilo.fab),
+        label: const Text('NOVA QUADRA', style: AceEstilo.fab),
       ),
       body: RefreshIndicator(
         color: AceCores.verde,
@@ -131,7 +104,7 @@ class _QuadrasPageState extends State<QuadrasPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('QUADRAS', style: _Estilo.titulo),
+                    const Text('QUADRAS', style: AceEstilo.titulo),
                     const SizedBox(height: 10),
                     const Text(
                       'Cadastre, edite ou inative quadras. Quadras inativas não aparecem para os clientes.',
@@ -153,12 +126,12 @@ class _QuadrasPageState extends State<QuadrasPage> {
     final falha = _falhaCarga;
     if (falha != null) {
       return [
-        _Alerta(mensagem: falha.mensagem),
+        AceAlerta(mensagem: falha.mensagem),
         Align(
           alignment: Alignment.centerLeft,
           child: OutlinedButton.icon(
             onPressed: _carregar,
-            style: _Estilo.botaoContorno,
+            style: AceEstilo.botaoContorno,
             icon: const Icon(Icons.refresh),
             label: const Text('Tentar de novo'),
           ),
@@ -225,15 +198,15 @@ class _LinhaQuadra extends StatelessWidget {
                     runSpacing: 6,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text(quadra.nome.toUpperCase(), style: _Estilo.nomeQuadra),
-                      _Chip(
+                      Text(quadra.nome.toUpperCase(), style: AceEstilo.nomeQuadra),
+                      AceChip(
                           texto: quadra.tipoPiso.rotulo,
                           fundo: quadra.tipoPiso.fundo,
                           cor: quadra.tipoPiso.cor),
                       quadra.ativa
-                          ? const _Chip(
+                          ? const AceChip(
                               texto: 'Ativa', fundo: AceCores.verdeClaro, cor: AceCores.verde)
-                          : const _Chip(
+                          : const AceChip(
                               texto: 'Inativa', fundo: AceCores.cinzaClaro, cor: AceCores.cinza),
                     ],
                   ),
@@ -261,7 +234,7 @@ class _LinhaQuadra extends StatelessWidget {
                 : FilledButton.tonalIcon(
                     key: Key('quadra-editar-${quadra.id}'),
                     onPressed: aoEditar,
-                    style: _Estilo.botaoTonal,
+                    style: AceEstilo.botaoTonal,
                     icon: const Icon(Icons.edit, size: 18),
                     label: const Text('Editar'),
                   ),
@@ -351,10 +324,10 @@ class _FormularioQuadraState extends State<_FormularioQuadra> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(editando ? 'EDITAR QUADRA' : 'NOVA QUADRA', style: _Estilo.tituloDialogo),
+              Text(editando ? 'EDITAR QUADRA' : 'NOVA QUADRA', style: AceEstilo.tituloDialogo),
               const SizedBox(height: 16),
-              if (_erroGeral != null) _Alerta(mensagem: _erroGeral!),
-              const _Rotulo('Nome'),
+              if (_erroGeral != null) AceAlerta(mensagem: _erroGeral!),
+              const AceRotulo('Nome'),
               TextField(
                 key: const Key('quadra-nome'),
                 controller: _nome,
@@ -362,17 +335,17 @@ class _FormularioQuadraState extends State<_FormularioQuadra> {
                 maxLength: 60,
                 enabled: !_salvando,
                 textInputAction: TextInputAction.next,
-                decoration: _Estilo.campo(hint: 'Ex.: Saibro 3', erro: _erroNome),
+                decoration: AceEstilo.campo(hint: 'Ex.: Saibro 3', erro: _erroNome),
                 onChanged: (_) {
                   if (_erroNome != null) setState(() => _erroNome = null);
                 },
               ),
               const SizedBox(height: 8),
-              const _Rotulo('Tipo de piso'),
+              const AceRotulo('Tipo de piso'),
               DropdownButtonFormField<TipoPiso>(
                 key: const Key('quadra-piso'),
                 initialValue: _piso,
-                decoration: _Estilo.campo(),
+                decoration: AceEstilo.campo(),
                 borderRadius: BorderRadius.circular(16),
                 items: [
                   for (final p in TipoPiso.values)
@@ -381,7 +354,7 @@ class _FormularioQuadraState extends State<_FormularioQuadra> {
                 onChanged: _salvando ? null : (p) => setState(() => _piso = p ?? _piso),
               ),
               const SizedBox(height: 16),
-              const _Rotulo('Descrição'),
+              const AceRotulo('Descrição'),
               TextField(
                 key: const Key('quadra-descricao'),
                 controller: _descricao,
@@ -389,7 +362,7 @@ class _FormularioQuadraState extends State<_FormularioQuadra> {
                 maxLines: 3,
                 minLines: 2,
                 enabled: !_salvando,
-                decoration: _Estilo.campo(hint: 'Cobertura, iluminação, observações…'),
+                decoration: AceEstilo.campo(hint: 'Cobertura, iluminação, observações…'),
               ),
               const SizedBox(height: 4),
               Row(
@@ -424,13 +397,13 @@ class _FormularioQuadraState extends State<_FormularioQuadra> {
                 children: [
                   OutlinedButton(
                     onPressed: _salvando ? null : () => Navigator.of(context).pop(),
-                    style: _Estilo.botaoContorno,
+                    style: AceEstilo.botaoContorno,
                     child: const Text('Cancelar'),
                   ),
                   FilledButton(
                     key: const Key('quadra-salvar'),
                     onPressed: _salvando ? null : _salvar,
-                    style: _Estilo.botaoPrimario,
+                    style: AceEstilo.botaoPrimario,
                     child: _salvando
                         ? const SizedBox(
                             width: 20,
@@ -447,76 +420,6 @@ class _FormularioQuadraState extends State<_FormularioQuadra> {
       ),
     );
   }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({required this.texto, required this.fundo, required this.cor});
-
-  final String texto;
-  final Color fundo;
-  final Color cor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(color: fundo, borderRadius: BorderRadius.circular(99)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-              width: 8, height: 8, decoration: BoxDecoration(color: cor, shape: BoxShape.circle)),
-          const SizedBox(width: 7),
-          Text(texto, style: TextStyle(color: cor, fontSize: 12, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-}
-
-class _Rotulo extends StatelessWidget {
-  const _Rotulo(this.texto);
-
-  final String texto;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 4, bottom: 7),
-        child: Text(
-          texto.toUpperCase(),
-          style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: .6,
-              color: AceCores.apagado),
-        ),
-      );
-}
-
-class _Alerta extends StatelessWidget {
-  const _Alerta({required this.mensagem});
-
-  final String mensagem;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 18),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-            color: AceCores.vermelhoClaro, borderRadius: BorderRadius.circular(18)),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: Color(0xFF8E1B1B)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(mensagem,
-                  style: const TextStyle(color: Color(0xFF8E1B1B), fontSize: 14.5)),
-            ),
-          ],
-        ),
-      );
 }
 
 class _Vazio extends StatelessWidget {
@@ -542,62 +445,3 @@ class _Vazio extends StatelessWidget {
       );
 }
 
-/// Tipografia e botões do protótipo. A fonte "Big Shoulders Display" não está no app
-/// (precisaria do pacote google_fonts); os títulos usam peso 900 em caixa alta.
-abstract final class _Estilo {
-  static const barra =
-      TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: 1, height: 1);
-  static const titulo = TextStyle(
-      fontSize: 64, fontWeight: FontWeight.w900, height: .9, color: AceCores.tinta);
-  static const tituloDialogo = TextStyle(
-      fontSize: 40, fontWeight: FontWeight.w900, height: .95, color: AceCores.tinta);
-  static const nomeQuadra = TextStyle(
-      fontSize: 22, fontWeight: FontWeight.w800, height: 1.1, color: AceCores.tinta);
-  static const fab = TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 1.2);
-
-  static final _pilula = RoundedRectangleBorder(borderRadius: BorderRadius.circular(999));
-
-  static final botaoPrimario = FilledButton.styleFrom(
-    backgroundColor: AceCores.verde,
-    foregroundColor: Colors.white,
-    minimumSize: const Size(0, 48),
-    padding: const EdgeInsets.symmetric(horizontal: 24),
-    shape: _pilula,
-    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-  );
-  static final botaoTonal = FilledButton.styleFrom(
-    backgroundColor: AceCores.verdeClaro,
-    foregroundColor: AceCores.verde,
-    minimumSize: const Size(0, 38),
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    shape: _pilula,
-    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-  );
-  static final botaoContorno = OutlinedButton.styleFrom(
-    foregroundColor: AceCores.tinta,
-    minimumSize: const Size(0, 48),
-    padding: const EdgeInsets.symmetric(horizontal: 24),
-    side: const BorderSide(color: AceCores.linha, width: 1.5),
-    shape: _pilula,
-    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-  );
-
-  static InputDecoration campo({String? hint, String? erro}) {
-    OutlineInputBorder borda(Color cor, [double largura = 1.5]) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: cor, width: largura));
-    return InputDecoration(
-      hintText: hint,
-      errorText: erro,
-      counterText: '',
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      enabledBorder: borda(AceCores.linha),
-      focusedBorder: borda(AceCores.verde, 2),
-      errorBorder: borda(AceCores.vermelho),
-      focusedErrorBorder: borda(AceCores.vermelho, 2),
-      disabledBorder: borda(AceCores.linha),
-    );
-  }
-}

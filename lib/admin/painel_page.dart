@@ -19,7 +19,8 @@ class PainelPage extends StatelessWidget {
     final modulos = <_Modulo>[
       _Modulo(Icons.sports_tennis, 'QUADRAS', 'Cadastro, edição e inativação das quadras.',
           chave: const Key('painel-quadras'), rota: '/admin/quadras'),
-      const _Modulo(Icons.schedule, 'HORÁRIOS', 'Abertura e fechamento por dia da semana.'),
+      _Modulo(Icons.schedule, 'HORÁRIOS', 'Abertura e fechamento por dia da semana.',
+          chave: const Key('painel-horarios'), rota: '/admin/horarios'),
       const _Modulo(Icons.attach_money, 'PREÇOS', 'Valores de dia útil e fim de semana.'),
       const _Modulo(Icons.event_busy, 'BLOQUEIOS', 'Reserve horários para manutenção.'),
       const _Modulo(Icons.event_available, 'RESERVAS', 'Veja, filtre e cancele reservas.'),
