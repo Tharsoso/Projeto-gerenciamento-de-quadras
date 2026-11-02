@@ -35,6 +35,13 @@ class PainelPage extends StatelessWidget {
               icon: const Icon(Icons.sports_tennis),
               label: const Text('Quadras'),
             ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              key: const Key('painel-horarios'),
+              onPressed: () => context.go('/admin/horarios'),
+              icon: const Icon(Icons.schedule),
+              label: const Text('Horários de funcionamento'),
+            ),
           ],
         ),
       ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'admin/horarios_page.dart';
+import 'admin/horarios_repositorio.dart';
 import 'admin/painel_page.dart';
 import 'admin/quadras_page.dart';
 import 'admin/quadras_repositorio.dart';
@@ -16,6 +18,7 @@ class App extends StatefulWidget {
     required this.auth,
     this.limiteInatividade = limiteInatividadePadrao,
     this.quadras,
+    this.horarios,
   });
 
   final Autenticacao auth;
@@ -23,6 +26,9 @@ class App extends StatefulWidget {
 
   /// Acesso às quadras (5.2). Sem ele, usa o Supabase já inicializado.
   final QuadrasRepositorio? quadras;
+
+  /// Acesso aos horários de funcionamento (5.3). Sem ele, usa o Supabase.
+  final HorariosRepositorio? horarios;
 
   @override
   State<App> createState() => _AppState();
@@ -55,6 +61,15 @@ class _AppState extends State<App> {
             builder: (context, state) => QuadrasPage(
               repositorio:
                   widget.quadras ?? SupabaseQuadrasRepositorio(Supabase.instance.client),
+              aoVoltar: () => context.go('/admin'),
+              aoSessaoExpirada: _expirarSessao,
+            ),
+          ),
+          GoRoute(
+            path: '/admin/horarios',
+            builder: (context, state) => HorariosPage(
+              repositorio:
+                  widget.horarios ?? SupabaseHorariosRepositorio(Supabase.instance.client),
               aoVoltar: () => context.go('/admin'),
               aoSessaoExpirada: _expirarSessao,
             ),

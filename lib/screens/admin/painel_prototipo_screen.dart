@@ -7,7 +7,7 @@ class PainelPrototipoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final itens = <_ItemMenu>[
       _ItemMenu(Icons.sports_tennis, 'Quadras', 'Cadastro e inativação (H8)', '/admin/quadras'),
-      _ItemMenu(Icons.schedule, 'Horários de funcionamento', 'Abertura e fechamento (H9)'),
+      _ItemMenu(Icons.schedule, 'Horários de funcionamento', 'Abertura e fechamento (H9)', '/admin/horarios'),
       _ItemMenu(Icons.attach_money, 'Preços por faixa', 'Dia útil / fim de semana (H4)'),
       _ItemMenu(Icons.event_busy, 'Bloqueios', 'Manutenção da quadra (H5)'),
       _ItemMenu(Icons.event_available, 'Reservas', 'Consulta e cancelamento (H11, H3)'),

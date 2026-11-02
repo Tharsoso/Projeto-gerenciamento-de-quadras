@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'admin/horarios_page.dart';
+import 'admin/horarios_repositorio.dart';
 import 'admin/quadras_page.dart';
 import 'admin/quadras_repositorio.dart';
 import 'app_theme.dart';
@@ -47,6 +49,10 @@ class GqtApp extends StatelessWidget {
         '/admin/quadras': (_) => _supabaseUrl.isEmpty
             ? const Scaffold(body: Center(child: Text('Supabase não configurado (env.json).')))
             : QuadrasPage(repositorio: SupabaseQuadrasRepositorio(Supabase.instance.client)),
+        // 5.3. Mesma situação: salvar exige o login da 5.1.
+        '/admin/horarios': (_) => _supabaseUrl.isEmpty
+            ? const Scaffold(body: Center(child: Text('Supabase não configurado (env.json).')))
+            : HorariosPage(repositorio: SupabaseHorariosRepositorio(Supabase.instance.client)),
       },
     );
   }
