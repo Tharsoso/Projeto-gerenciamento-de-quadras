@@ -3,6 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'admin/agendamentos_page.dart';
+import 'admin/agendamentos_repositorio.dart';
 import 'admin/bloqueios_page.dart';
 import 'admin/bloqueios_repositorio.dart';
 import 'admin/horarios_page.dart';
@@ -28,6 +30,7 @@ class App extends StatefulWidget {
     this.reservas,
     this.horarios,
     this.bloqueios,
+    this.agendamentos,
   });
 
   final Autenticacao auth;
@@ -44,6 +47,9 @@ class App extends StatefulWidget {
 
   /// Bloqueios de manutenção (5.6). Sem ele, usa o Supabase.
   final BloqueiosRepositorio? bloqueios;
+
+  /// Consulta de agendamentos (5.4). Sem ele, usa o Supabase já inicializado.
+  final AgendamentosRepositorio? agendamentos;
 
   @override
   State<App> createState() => _AppState();
@@ -110,6 +116,15 @@ class _AppState extends State<App> {
             builder: (context, state) => BloqueiosPage(
               repositorio:
                   widget.bloqueios ?? SupabaseBloqueiosRepositorio(Supabase.instance.client),
+              aoVoltar: () => context.go('/admin'),
+              aoSessaoExpirada: _expirarSessao,
+            ),
+          ),
+          GoRoute(
+            path: '/admin/reservas',
+            builder: (context, state) => AgendamentosPage(
+              repositorio: widget.agendamentos ??
+                  SupabaseAgendamentosRepositorio(Supabase.instance.client),
               aoVoltar: () => context.go('/admin'),
               aoSessaoExpirada: _expirarSessao,
             ),
