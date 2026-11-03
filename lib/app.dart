@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin/agendamentos_page.dart';
 import 'admin/agendamentos_repositorio.dart';
 import 'admin/bloqueios_page.dart';
+import 'admin/faturamento_page.dart';
+import 'admin/faturamento_repositorio.dart';
 import 'admin/bloqueios_repositorio.dart';
 import 'admin/horarios_page.dart';
 import 'admin/horarios_repositorio.dart';
@@ -31,6 +33,7 @@ class App extends StatefulWidget {
     this.horarios,
     this.bloqueios,
     this.agendamentos,
+    this.faturamento,
   });
 
   final Autenticacao auth;
@@ -50,6 +53,9 @@ class App extends StatefulWidget {
 
   /// Consulta de agendamentos (5.4). Sem ele, usa o Supabase já inicializado.
   final AgendamentosRepositorio? agendamentos;
+
+  /// Relatório de faturamento (5.8). Sem ele, usa o Supabase já inicializado.
+  final FaturamentoRepositorio? faturamento;
 
   @override
   State<App> createState() => _AppState();
@@ -125,6 +131,15 @@ class _AppState extends State<App> {
             builder: (context, state) => AgendamentosPage(
               repositorio: widget.agendamentos ??
                   SupabaseAgendamentosRepositorio(Supabase.instance.client),
+              aoVoltar: () => context.go('/admin'),
+              aoSessaoExpirada: _expirarSessao,
+            ),
+          ),
+          GoRoute(
+            path: '/admin/faturamento',
+            builder: (context, state) => FaturamentoPage(
+              repositorio: widget.faturamento ??
+                  SupabaseFaturamentoRepositorio(Supabase.instance.client),
               aoVoltar: () => context.go('/admin'),
               aoSessaoExpirada: _expirarSessao,
             ),
