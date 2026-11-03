@@ -6,7 +6,7 @@ import '../auth/autenticacao.dart';
 import '../screens/widgets/tennis_ball.dart';
 
 /// Painel do proprietário. Visual do protótipo Ace Saibro: cards numerados dos módulos.
-/// Só "Quadras" tem tela até agora; os demais entram nas próximas atividades (5.x).
+/// Módulos sem rota aparecem como "Em breve" até a atividade deles (5.x) entrar.
 class PainelPage extends StatelessWidget {
   const PainelPage({super.key, required this.auth});
 
@@ -21,12 +21,14 @@ class PainelPage extends StatelessWidget {
           chave: const Key('painel-quadras'), rota: '/admin/quadras'),
       _Modulo(Icons.schedule, 'HORÁRIOS', 'Abertura e fechamento por dia da semana.',
           chave: const Key('painel-horarios'), rota: '/admin/horarios'),
-      const _Modulo(Icons.attach_money, 'PREÇOS', 'Valores de dia útil e fim de semana.'),
+      _Modulo(Icons.attach_money, 'PREÇOS', 'Valores de dia útil e fim de semana.',
+          chave: const Key('painel-precos'), rota: '/admin/precos'),
       _Modulo(Icons.event_busy, 'BLOQUEIOS', 'Reserve horários para manutenção.',
           chave: const Key('painel-bloqueios'), rota: '/admin/bloqueios'),
       const _Modulo(Icons.event_available, 'RESERVAS', 'Veja, filtre e cancele reservas.'),
       const _Modulo(Icons.insert_chart_outlined, 'FATURAMENTO', 'Relatório por período.'),
-      const _Modulo(Icons.beach_access, 'FERIADOS', 'Calendário anual de feriados.'),
+      _Modulo(Icons.beach_access, 'FERIADOS', 'Calendário anual de feriados.',
+          chave: const Key('painel-feriados'), rota: '/admin/feriados'),
     ];
 
     return Scaffold(
