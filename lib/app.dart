@@ -7,6 +7,7 @@ import 'admin/agendamentos_page.dart';
 import 'admin/agendamentos_repositorio.dart';
 import 'admin/bloqueios_page.dart';
 import 'admin/bloqueios_repositorio.dart';
+import 'admin/cancelamento.dart';
 import 'admin/horarios_page.dart';
 import 'admin/horarios_repositorio.dart';
 import 'admin/painel_page.dart';
@@ -31,6 +32,7 @@ class App extends StatefulWidget {
     this.horarios,
     this.bloqueios,
     this.agendamentos,
+    this.cancelamento,
   });
 
   final Autenticacao auth;
@@ -50,6 +52,9 @@ class App extends StatefulWidget {
 
   /// Consulta de agendamentos (5.4). Sem ele, usa o Supabase já inicializado.
   final AgendamentosRepositorio? agendamentos;
+
+  /// Cancelamento de reservas (5.5). Sem ele, usa o Supabase.
+  final CancelamentoRepositorio? cancelamento;
 
   @override
   State<App> createState() => _AppState();
@@ -127,6 +132,10 @@ class _AppState extends State<App> {
                   SupabaseAgendamentosRepositorio(Supabase.instance.client),
               aoVoltar: () => context.go('/admin'),
               aoSessaoExpirada: _expirarSessao,
+              acoes: acoesCancelamento(
+                repositorio: widget.cancelamento ?? SupabaseCancelamentoRepositorio(),
+                aoSessaoExpirada: _expirarSessao,
+              ),
             ),
           ),
         ],
