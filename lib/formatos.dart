@@ -1,5 +1,9 @@
-/// Valor em reais no formato brasileiro: `R$ 60,00` (RNF07).
-String formatarReal(double valor) => 'R\$ ${valor.toStringAsFixed(2).replaceAll('.', ',')}';
+/// Valor em reais no formato brasileiro: `R$ 60,00`, `R$ 12.480,00` (RNF07).
+String formatarReal(double valor) {
+  final partes = valor.abs().toStringAsFixed(2).split('.');
+  final inteiro = partes[0].replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');
+  return '${valor < 0 ? '-' : ''}R\$ $inteiro,${partes[1]}';
+}
 
 /// Data no formato brasileiro: `dd/mm/aaaa`.
 String formatarData(DateTime d) =>

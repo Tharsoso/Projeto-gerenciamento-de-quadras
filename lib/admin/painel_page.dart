@@ -27,7 +27,8 @@ class PainelPage extends StatelessWidget {
           chave: const Key('painel-bloqueios'), rota: '/admin/bloqueios'),
       _Modulo(Icons.event_available, 'RESERVAS', 'Veja e filtre as reservas por período.',
           chave: const Key('painel-reservas'), rota: '/admin/reservas'),
-      const _Modulo(Icons.insert_chart_outlined, 'FATURAMENTO', 'Relatório por período.'),
+      _Modulo(Icons.insert_chart_outlined, 'FATURAMENTO', 'Relatório por período.',
+          chave: const Key('painel-faturamento'), rota: '/admin/faturamento'),
       _Modulo(Icons.beach_access, 'FERIADOS', 'Calendário anual de feriados.',
           chave: const Key('painel-feriados'), rota: '/admin/feriados'),
     ];
