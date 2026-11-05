@@ -6,11 +6,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin/agendamentos_page.dart';
 import 'admin/agendamentos_repositorio.dart';
 import 'admin/bloqueios_page.dart';
+import 'admin/faturamento_page.dart';
+import 'admin/faturamento_repositorio.dart';
 import 'admin/bloqueios_repositorio.dart';
 import 'admin/cancelamento.dart';
+import 'admin/feriados_page.dart';
+import 'admin/feriados_repositorio.dart';
 import 'admin/horarios_page.dart';
 import 'admin/horarios_repositorio.dart';
 import 'admin/painel_page.dart';
+import 'admin/precos_page.dart';
+import 'admin/precos_repositorio.dart';
 import 'admin/quadras_page.dart';
 import 'admin/quadras_repositorio.dart';
 import 'app_theme.dart';
@@ -31,7 +37,10 @@ class App extends StatefulWidget {
     this.reservas,
     this.horarios,
     this.bloqueios,
+    this.precos,
+    this.feriados,
     this.agendamentos,
+    this.faturamento,
     this.cancelamento,
   });
 
@@ -50,8 +59,17 @@ class App extends StatefulWidget {
   /// Bloqueios de manutenção (5.6). Sem ele, usa o Supabase.
   final BloqueiosRepositorio? bloqueios;
 
+  /// Tabela de preços por faixa (5.7). Sem ele, usa o Supabase.
+  final PrecosRepositorio? precos;
+
+  /// Calendário de feriados (5.7). Sem ele, usa o Supabase.
+  final FeriadosRepositorio? feriados;
+
   /// Consulta de agendamentos (5.4). Sem ele, usa o Supabase já inicializado.
   final AgendamentosRepositorio? agendamentos;
+
+  /// Relatório de faturamento (5.8). Sem ele, usa o Supabase já inicializado.
+  final FaturamentoRepositorio? faturamento;
 
   /// Cancelamento de reservas (5.5). Sem ele, usa o Supabase.
   final CancelamentoRepositorio? cancelamento;
@@ -126,6 +144,24 @@ class _AppState extends State<App> {
             ),
           ),
           GoRoute(
+            path: '/admin/precos',
+            builder: (context, state) => PrecosPage(
+              repositorio:
+                  widget.precos ?? SupabasePrecosRepositorio(Supabase.instance.client),
+              aoVoltar: () => context.go('/admin'),
+              aoSessaoExpirada: _expirarSessao,
+            ),
+          ),
+          GoRoute(
+            path: '/admin/feriados',
+            builder: (context, state) => FeriadosPage(
+              repositorio:
+                  widget.feriados ?? SupabaseFeriadosRepositorio(Supabase.instance.client),
+              aoVoltar: () => context.go('/admin'),
+              aoSessaoExpirada: _expirarSessao,
+            ),
+          ),
+          GoRoute(
             path: '/admin/reservas',
             builder: (context, state) => AgendamentosPage(
               repositorio: widget.agendamentos ??
@@ -136,6 +172,15 @@ class _AppState extends State<App> {
                 repositorio: widget.cancelamento ?? SupabaseCancelamentoRepositorio(),
                 aoSessaoExpirada: _expirarSessao,
               ),
+            ),
+          ),
+          GoRoute(
+            path: '/admin/faturamento',
+            builder: (context, state) => FaturamentoPage(
+              repositorio: widget.faturamento ??
+                  SupabaseFaturamentoRepositorio(Supabase.instance.client),
+              aoVoltar: () => context.go('/admin'),
+              aoSessaoExpirada: _expirarSessao,
             ),
           ),
         ],
