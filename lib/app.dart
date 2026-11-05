@@ -9,6 +9,7 @@ import 'admin/bloqueios_page.dart';
 import 'admin/faturamento_page.dart';
 import 'admin/faturamento_repositorio.dart';
 import 'admin/bloqueios_repositorio.dart';
+import 'admin/cancelamento.dart';
 import 'admin/feriados_page.dart';
 import 'admin/feriados_repositorio.dart';
 import 'admin/horarios_page.dart';
@@ -40,6 +41,7 @@ class App extends StatefulWidget {
     this.feriados,
     this.agendamentos,
     this.faturamento,
+    this.cancelamento,
   });
 
   final Autenticacao auth;
@@ -68,6 +70,9 @@ class App extends StatefulWidget {
 
   /// Relatório de faturamento (5.8). Sem ele, usa o Supabase já inicializado.
   final FaturamentoRepositorio? faturamento;
+
+  /// Cancelamento de reservas (5.5). Sem ele, usa o Supabase.
+  final CancelamentoRepositorio? cancelamento;
 
   @override
   State<App> createState() => _AppState();
@@ -163,6 +168,10 @@ class _AppState extends State<App> {
                   SupabaseAgendamentosRepositorio(Supabase.instance.client),
               aoVoltar: () => context.go('/admin'),
               aoSessaoExpirada: _expirarSessao,
+              acoes: acoesCancelamento(
+                repositorio: widget.cancelamento ?? SupabaseCancelamentoRepositorio(),
+                aoSessaoExpirada: _expirarSessao,
+              ),
             ),
           ),
           GoRoute(
