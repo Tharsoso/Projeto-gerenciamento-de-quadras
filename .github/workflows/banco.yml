@@ -1,0 +1,53 @@
+# Testes do banco (atividade 5.9): aplica as migrations e o seed num Postgres do
+# Supabase descartável e roda os testes SQL de supabase/testes/.
+name: Banco
+
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/**', '.github/workflows/banco.yml']
+  pull_request:
+    branches: [main]
+    paths: ['supabase/**', '.github/workflows/banco.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  testes-sql:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    services:
+      banco:
+        image: supabase/postgres:17.11.0.007
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -h localhost"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+
+    env:
+      URL: postgresql://postgres:postgres@localhost:5432/postgres
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Aplicar migrations e seed
+        run: |
+          for f in supabase/migrations/*.sql supabase/seed.sql; do
+            echo "== $f"
+            psql "$URL" -X -q -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      - name: Rodar os testes SQL
+        run: |
+          for f in supabase/testes/*.sql; do
+            echo "== $f"
+            psql "$URL" -X -q -v ON_ERROR_STOP=1 -f "$f"
+          done

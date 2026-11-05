@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../app_theme.dart';
 import '../../formatos.dart';
+import '../../fuso.dart';
 import '../../models/horario_slot.dart';
 import '../../publico/reservas_repositorio.dart';
 import '../../services/quadras_service.dart';
@@ -37,7 +38,7 @@ class _ConsultaHorariosScreenState extends State<ConsultaHorariosScreen> {
   RealtimeChannel? _canal;
 
   static DateTime _hoje() {
-    final n = DateTime.now();
+    final n = agoraBrasilia();
     return DateTime(n.year, n.month, n.day);
   }
 
@@ -664,7 +665,7 @@ class _DateBar extends StatelessWidget {
     ];
     final diaSemana = dows[dia.weekday % 7];
     final mes = mons[dia.month - 1];
-    final hoje = DateTime.now();
+    final hoje = agoraBrasilia();
     final isPast = dia.isBefore(DateTime(hoje.year, hoje.month, hoje.day));
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 20, 20, 8),

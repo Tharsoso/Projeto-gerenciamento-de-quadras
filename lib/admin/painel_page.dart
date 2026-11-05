@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../app_theme.dart';
 import '../auth/autenticacao.dart';
+import '../fuso.dart';
 import '../screens/widgets/tennis_ball.dart';
 
 /// Painel do proprietário. Visual do protótipo Ace Saibro: cards numerados dos módulos.
@@ -14,7 +15,7 @@ class PainelPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final agora = DateTime.now();
+    final agora = agoraBrasilia();
     final saudacao = agora.hour < 12 ? 'Bom dia' : agora.hour < 18 ? 'Boa tarde' : 'Boa noite';
     final modulos = <_Modulo>[
       _Modulo(Icons.sports_tennis, 'QUADRAS', 'Cadastro, edição e inativação das quadras.',

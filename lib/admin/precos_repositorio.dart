@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../fuso.dart';
 import '../models/bloqueio.dart' show dataIso;
 import '../models/funcionamento.dart';
 import '../models/preco.dart';
@@ -76,7 +77,7 @@ class SupabasePrecosRepositorio implements PrecosRepositorio {
 
   @override
   Future<List<ReservaComValor>> reservasFuturas(int quadraId) => _tratar(() async {
-        final agora = DateTime.now();
+        final agora = agoraBrasilia();
         final hoje = DateTime(agora.year, agora.month, agora.day);
         final linhas = await _client
             .from('reservas')

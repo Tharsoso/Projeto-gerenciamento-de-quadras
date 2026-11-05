@@ -1,0 +1,59 @@
+# Backup diário do banco (atividade 5.9, RNF14, regras B1–B6 e B8).
+# Detalhes e configuração: docs/atividade-5.9-transversais.md
+name: Backup do banco
+
+on:
+  schedule:
+    - cron: '30 6 * * *' # 06:30 UTC = 03:30 de Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-banco
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    # Forks não têm os segredos e não devem tentar o backup.
+    if: github.repository == 'Tharsoso/Projeto-gerenciamento-de-quadras'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar o cliente do Postgres 17 e o age
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common age
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Gerar o backup cifrado
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_AGE_PUBLICA: ${{ vars.BACKUP_AGE_PUBLICA }}
+        run: supabase/backup/backup.sh "$RUNNER_TEMP/backup"
+
+      - name: Resumo (só contagens, sem dados pessoais)
+        run: |
+          {
+            echo '### Backup do banco'
+            echo
+            echo '| Tabela | Linhas |'
+            echo '|---|---:|'
+            sed 's/^\(.*\)|\(.*\)$/| \1 | \2 |/' "$RUNNER_TEMP/backup/manifesto.txt"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar por 30 dias
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-banco
+          path: ${{ runner.temp }}/backup/*.tar.gz.age
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error

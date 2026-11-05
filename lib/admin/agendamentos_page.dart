@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../formatos.dart';
+import '../fuso.dart';
 import '../models/agendamento.dart';
 import '../models/bloqueio.dart' show dataBr;
 import '../models/quadra.dart';
@@ -51,7 +52,7 @@ class _AgendamentosPageState extends State<AgendamentosPage> {
   int _pedido = 0;
 
   DateTime get _hoje {
-    final h = widget.hoje ?? DateTime.now();
+    final h = widget.hoje ?? agoraBrasilia();
     return DateTime(h.year, h.month, h.day);
   }
 

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../formatos.dart';
+import '../fuso.dart';
 import '../models/bloqueio.dart' show dataBr;
 import '../tema/ace_componentes.dart';
 import '../tema/ace_cores.dart';
@@ -50,7 +51,7 @@ class _FaturamentoPageState extends State<FaturamentoPage> {
   bool _tabela = false;
 
   DateTime get _hoje {
-    final h = widget.hoje ?? DateTime.now();
+    final h = widget.hoje ?? agoraBrasilia();
     return DateTime(h.year, h.month, h.day);
   }
 

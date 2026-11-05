@@ -1,0 +1,76 @@
+# Teste mensal de restauração do backup (atividade 5.9, RNF14 regra B7 e RNF04 regra L7).
+# Restaura o backup mais recente num Postgres do Supabase descartável dentro do runner
+# e confere contagens, permissões, funções e anonimização. Não toca no banco de produção.
+name: Teste de restauração do backup
+
+on:
+  schedule:
+    - cron: '0 7 1 * *' # dia 1 de cada mês, 07:00 UTC = 04:00 de Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read # baixar o artefato do workflow de backup
+
+jobs:
+  restaurar:
+    if: github.repository == 'Tharsoso/Projeto-gerenciamento-de-quadras'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      banco:
+        # Mesma versão principal do projeto (supabase/config.toml: major_version = 17).
+        image: supabase/postgres:17.11.0.007
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -h localhost"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar o cliente do Postgres 17 e o age
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common age
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Baixar o backup mais recente
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow backup.yml \
+                     --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          if [ -z "$run_id" ]; then
+            echo "::error::Nenhum backup com sucesso nos últimos 30 dias."
+            exit 1
+          fi
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" \
+            --name backup-banco --dir "$RUNNER_TEMP/backup"
+          ls -l "$RUNNER_TEMP/backup"
+
+      - name: Restaurar e conferir
+        env:
+          BACKUP_AGE_CHAVE: ${{ secrets.BACKUP_AGE_CHAVE }}
+          DESTINO_URL: postgresql://supabase_admin:postgres@localhost:5432/postgres
+        run: |
+          if [ -z "$BACKUP_AGE_CHAVE" ]; then
+            echo "::error::Secret BACKUP_AGE_CHAVE não configurado."
+            exit 1
+          fi
+          arquivo=$(find "$RUNNER_TEMP/backup" -name "*.tar.gz.age" | head -1)
+          supabase/backup/restaurar.sh teste "$arquivo"
+
+      - name: Teste da LGPD no banco restaurado
+        env:
+          DESTINO_URL: postgresql://supabase_admin:postgres@localhost:5432/postgres
+        run: psql "$DESTINO_URL" -X -q -v ON_ERROR_STOP=1 -f supabase/testes/lgpd.sql
