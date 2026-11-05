@@ -138,7 +138,7 @@ class _ReservaScreenState extends State<ReservaScreen> {
                       const SizedBox(height: 18),
                       const _Regra('Reserva de 1 hora cheia, sem login.'),
                       const _Regra('Até 2 reservas por dia com o mesmo telefone.'),
-                      const _Regra('Seus dados são anonimizados após 12 meses (LGPD).'),
+                      const _Regra(avisoLgpdReserva, chave: Key('reserva-aviso-lgpd')),
                       const SizedBox(height: 20),
                       SizedBox(
                         height: 64,
@@ -250,13 +250,20 @@ class _Rotulo extends StatelessWidget {
       );
 }
 
+/// Aviso de finalidade e prazo dos dados pessoais (RNF04, regra L1 da atividade 5.9).
+const avisoLgpdReserva = 'Usamos seu nome e telefone só para identificar a reserva e falar '
+    'com você sobre ela. Eles são apagados (anonimizados) 12 meses depois da data da '
+    'reserva (LGPD).';
+
 class _Regra extends StatelessWidget {
-  const _Regra(this.texto);
+  const _Regra(this.texto, {this.chave});
 
   final String texto;
+  final Key? chave;
 
   @override
   Widget build(BuildContext context) => Padding(
+        key: chave,
         padding: const EdgeInsets.only(bottom: 8),
         child: Row(
           children: [

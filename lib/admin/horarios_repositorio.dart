@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../fuso.dart';
 import '../models/funcionamento.dart';
 import '../models/quadra.dart';
 import 'quadras_repositorio.dart' show FalhaQuadra;
@@ -53,7 +54,7 @@ class SupabaseHorariosRepositorio implements HorariosRepositorio {
   @override
   Future<List<ReservaFutura>> reservasFuturas(Set<int> quadraIds) => _tratar(() async {
         if (quadraIds.isEmpty) return const [];
-        final agora = DateTime.now();
+        final agora = agoraBrasilia();
         final hoje = DateTime(agora.year, agora.month, agora.day);
         final linhas = await _client
             .from('reservas')

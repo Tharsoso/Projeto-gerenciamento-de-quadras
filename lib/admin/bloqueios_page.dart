@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../fuso.dart';
 import '../models/bloqueio.dart';
 import '../models/funcionamento.dart' show nomesDias, diaSemanaDe, Intervalo;
 import '../models/quadra.dart';
@@ -92,7 +93,7 @@ class _BloqueiosPageState extends State<BloqueiosPage> {
   }
 
   DateTime get _hoje {
-    final h = widget.hoje ?? DateTime.now();
+    final h = widget.hoje ?? agoraBrasilia();
     return DateTime(h.year, h.month, h.day);
   }
 

@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../fuso.dart';
 import '../models/bloqueio.dart';
 import '../models/quadra.dart';
 import 'quadras_repositorio.dart' show FalhaQuadra;
@@ -44,7 +45,7 @@ class SupabaseBloqueiosRepositorio implements BloqueiosRepositorio {
 
   @override
   Future<List<Bloqueio>> futuros() => _tratar(() async {
-        final agora = DateTime.now();
+        final agora = agoraBrasilia();
         final hoje = DateTime(agora.year, agora.month, agora.day);
         final linhas = await _client
             .from('bloqueios')

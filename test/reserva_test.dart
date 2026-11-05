@@ -215,4 +215,15 @@ void main() {
     expect(formatarData(DateTime(2026, 3, 5)), '05/03/2026');
     expect(mascararTelefone('31999990000'), '(31) 99999-0000');
   });
+
+  testWidgets('a tela de reserva diz para que servem os dados e por quanto tempo (LGPD, L1)',
+      (tester) async {
+    await abrir(tester, RepositorioFalso());
+
+    final aviso = find.byKey(const Key('reserva-aviso-lgpd'));
+    expect(aviso, findsOneWidget);
+    final texto = tester.widget<Text>(find.descendant(of: aviso, matching: find.byType(Text)));
+    expect(texto.data, contains('identificar a reserva'));
+    expect(texto.data, contains('12 meses depois da data da reserva'));
+  });
 }

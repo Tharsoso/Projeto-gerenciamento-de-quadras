@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../fuso.dart';
 import '../models/bloqueio.dart' show dataBr, dataIso;
 import '../models/funcionamento.dart' show nomesDias, diaSemanaDe;
 import '../tema/ace_componentes.dart';
@@ -40,7 +41,7 @@ class _FeriadosPageState extends State<FeriadosPage> {
   late int _ano = _hoje.year;
 
   DateTime get _hoje {
-    final h = widget.hoje ?? DateTime.now();
+    final h = widget.hoje ?? agoraBrasilia();
     return DateTime(h.year, h.month, h.day);
   }
 
