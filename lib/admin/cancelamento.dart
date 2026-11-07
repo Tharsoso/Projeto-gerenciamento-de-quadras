@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../formatos.dart';
+import '../fuso.dart';
 import '../models/agendamento.dart';
 import '../models/bloqueio.dart' show dataBr;
 import '../models/funcionamento.dart' show nomesDias, diaSemanaDe;
@@ -71,14 +72,14 @@ bool emAndamento(Agendamento a, DateTime agora) {
 }
 
 /// Encaixe no `acoes` da `AgendamentosPage` (5.4): o botão só aparece onde cancelar é
-/// permitido. [agora] serve para os testes; sem ele, usa o relógio do aparelho.
+/// permitido. [agora] serve para os testes; sem ele, usa o horário de Brasília.
 AcoesAgendamento acoesCancelamento({
   required CancelamentoRepositorio repositorio,
   VoidCallback? aoSessaoExpirada,
   DateTime Function()? agora,
 }) {
   return (context, agendamento, recarregar) {
-    final relogio = agora ?? DateTime.now;
+    final relogio = agora ?? agoraBrasilia;
     if (!podeCancelar(agendamento, relogio())) return null;
     return BotaoCancelarReserva(
       agendamento: agendamento,
