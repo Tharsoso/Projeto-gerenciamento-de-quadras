@@ -12,7 +12,7 @@ class QuadrasService {
     return lista.map(HorarioSlot.fromMap).toList();
   }
 
-  RealtimeChannel assinarOcupacoes(void Function() onChange) {
+  RealtimeChannel? assinarOcupacoes(void Function() onChange) {
     final ch = _client.channel('public:ocupacoes');
     ch.onPostgresChanges(
       event: PostgresChangeEvent.all,
