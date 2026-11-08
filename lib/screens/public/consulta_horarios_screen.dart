@@ -999,29 +999,34 @@ class _SlotChip extends StatelessWidget {
                 ]
               : null,
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              slot.horaInicio,
-              style: AppTheme.mono(
-                size: 17,
-                color: isLivre ? Colors.white : cfg.$1,
-                weight: FontWeight.w700,
-                letterSpacing: -0.4,
+        // Encolhe em vez de estourar a altura fixa do card (fonte do aparelho aumentada).
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                slot.horaInicio,
+                style: AppTheme.mono(
+                  size: 17,
+                  color: isLivre ? Colors.white : cfg.$1,
+                  weight: FontWeight.w700,
+                  letterSpacing: -0.4,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              isLivre ? preco : cfg.$2,
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-                color: isLivre ? AppColors.ball : cfg.$1,
+              const SizedBox(height: 2),
+              Text(
+                isLivre ? preco : cfg.$2,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: isLivre ? AppColors.ball : cfg.$1,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
