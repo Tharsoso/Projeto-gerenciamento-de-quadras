@@ -11,15 +11,20 @@ import 'package:gqt/models/agendamento.dart';
 import 'package:gqt/models/quadra.dart';
 import 'package:gqt/publico/reservas_repositorio.dart';
 
-
+/// Testes de integração entre telas (atividade 6.4, parte A): jornadas completas que
+/// atravessam área pública, login e área administrativa com o app inteiro montado.
+///
+/// O banco é um só, em memória (`BancoFalso`): o que o cliente reserva é o que o proprietário
+/// vê e cancela, e as regras de horário ocupado e limite diário valem para as duas pontas.
+/// As regras de verdade são testadas no banco, em `supabase/testes/reservas.sql`.
 
 const saibro1 =
     Quadra(id: 1, nome: 'Saibro 1', tipoPiso: TipoPiso.saibro, descricao: null, ativa: true);
 
 bool _mesmoDia(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
-
-    implements ReservasRepositorio, AgendamentosRepositorio, CancelamentoRepositorio {
+/// Um banco só para as três pontas: reservar (cliente), consultar e cancelar (proprietário).
+class BancoFalso implements ReservasRepositorio, AgendamentosRepositorio, CancelamentoRepositorio {
   final List<Agendamento> reservas = [];
   int _proximoId = 1;
 
@@ -43,7 +48,7 @@ bool _mesmoDia(DateTime a, DateTime b) => a.year == b.year && a.month == b.month
     }
 
     final id = _proximoId++;
-    final valor = horario.valor ?? 0;
+    final double valor = horario.valor ?? 0;
     reservas.add(Agendamento(
       id: id,
       quadraId: horario.quadraId,
@@ -94,7 +99,7 @@ bool _mesmoDia(DateTime a, DateTime b) => a.year == b.year && a.month == b.month
   }
 }
 
-
+/// Autenticação em memória: qualquer e-mail e senha entram.
 class AuthFalsa extends ChangeNotifier implements Autenticacao {
   @override
   bool logado = false;
@@ -112,7 +117,8 @@ class AuthFalsa extends ChangeNotifier implements Autenticacao {
   }
 }
 
-
+/// Horário livre de 80 reais daqui a [dias] dias (a reserva precisa ser futura para poder
+/// ser cancelada pelo proprietário).
 HorarioEscolhido horarioEm(String hora, {int dias = 2}) {
   final n = agoraBrasilia();
   return HorarioEscolhido(
@@ -137,7 +143,7 @@ Future<void> abrir(WidgetTester tester, BancoFalso banco, AuthFalsa auth) async 
   await tester.pump();
 }
 
-
+/// Navega como o app faz: troca a rota atual e espera a tela assentar.
 Future<void> irPara(WidgetTester tester, String rota, {Object? extra}) async {
   GoRouter.of(tester.element(find.byType(Scaffold).first)).go(rota, extra: extra);
   await tester.pumpAndSettle();
@@ -162,12 +168,12 @@ void main() {
     final banco = BancoFalso();
     await abrir(tester, banco, AuthFalsa());
 
-   
+    // 1. O cliente reserva, sem login.
     await reservar(tester, horarioEm('18:00'), 'Maria da Silva', '31999990000');
     expect(find.text('CÓDIGO R0001'), findsOneWidget);
     expect(banco.reservas.single.telefone, '31999990000');
 
-   
+    // 2. O proprietário entra pelo login e abre as reservas.
     await irPara(tester, '/login');
     await tester.enterText(find.byKey(const Key('login-email')), 'proprietario@gqt.com');
     await tester.enterText(find.byKey(const Key('login-senha')), 'segredo');
@@ -180,7 +186,7 @@ void main() {
     expect(find.text('R0001'), findsOneWidget);
     expect(find.text('Confirmada'), findsOneWidget);
 
-   
+    // 3. Ele cancela com motivo: a reserva continua na lista, como cancelada (exclusão lógica).
     await tocar(tester, 'cancelar-1');
     await tester.enterText(find.byKey(const Key('cancelar-motivo')), 'Cliente avisou que não vem');
     await tocar(tester, 'cancelar-confirmar');
@@ -230,14 +236,14 @@ void main() {
     await reservar(tester, horarioEm('18:00'), 'Maria da Silva', '31999990000');
     await reservar(tester, horarioEm('19:00'), 'Maria da Silva', '31999990000');
 
-   
+    // O proprietário cancela a primeira reserva.
     await auth.entrar(email: 'proprietario@gqt.com', senha: 'segredo');
     await irPara(tester, '/admin/reservas');
     await tocar(tester, 'cancelar-1');
     await tocar(tester, 'cancelar-confirmar');
     expect(banco.reservas.first.cancelada, isTrue);
 
-  
+    // A reserva cancelada não conta no limite: o cliente consegue mais uma.
     await reservar(tester, horarioEm('20:00'), 'Maria da Silva', '31999990000');
 
     expect(find.text('CÓDIGO R0003'), findsOneWidget);
