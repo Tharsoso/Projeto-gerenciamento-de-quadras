@@ -81,6 +81,10 @@ Os horários da consulta têm 92×68 px, acima do mínimo de 48×48 px. Para as 
 
 O `responsividade_test.dart` abre home, reserva, confirmação, login, painel e reservas do proprietário em 360×800, 768×1024, 1280×800 e 1920×1080. Cada teste falha se o layout estourar (`overflowed by N pixels`) ou se a tela tiver rolagem horizontal.
 
+O app abre primeiro na home. Para o estouro da home não ser atribuído às outras telas, cada teste abre o app numa janela grande, vai para a tela e só então encolhe a janela até o tamanho testado.
+
+Nos testes, o Flutter usa uma fonte mais larga que a real. Um estouro que aparece só em 360 px deve ser conferido no navegador (modo dispositivo, 360 px) antes de virar defeito.
+
 As telas de **preços, feriados e faturamento** têm tabelas e gráficos com rolagem horizontal própria, e são conferidas à mão:
 
 1. No Chrome, aperte **F12** e depois **Ctrl+Shift+M** (modo dispositivo).

@@ -22,9 +22,6 @@ import 'package:gqt/services/quadras_service.dart';
 /// Flutter ("overflowed by N pixels"), que `tester.takeException()` devolve. A rolagem
 /// horizontal é procurada nos widgets que a criam (`ListView`, `SingleChildScrollView` etc.).
 ///
-/// Quando um teste falha, a mensagem diz qual foi a causa (overflow ou rolagem horizontal),
-/// qual widget estourou e quais widgets rolam na horizontal.
-///
 /// As telas de preços, feriados e faturamento têm gráficos e tabelas com rolagem horizontal
 /// própria e são conferidas à mão (docs/atividade-6.5-testes-nao-funcionais.md).
 
@@ -140,7 +137,18 @@ void _tamanho(WidgetTester tester, Size tamanho) {
 }
 
 /// Abre o app inteiro e vai para [rota], como acontece quando alguém digita o endereço.
-Future<void> _abrirApp(WidgetTester tester, String rota, {Object? extra, bool logado = false}) async {
+///
+/// O app sempre abre primeiro na home, que tem o próprio teste. Para o estouro da home não
+/// ser atribuído às outras telas, o app abre numa janela grande, vai para a [rota] e só então
+/// a janela encolhe até o [tamanho] do teste.
+Future<void> _abrirApp(
+  WidgetTester tester,
+  Size tamanho,
+  String rota, {
+  Object? extra,
+  bool logado = false,
+}) async {
+  _tamanho(tester, const Size(1280, 2400));
   await tester.pumpWidget(App(
     auth: AuthFalsa(logado: logado),
     reservas: _Reservas(),
@@ -149,10 +157,14 @@ Future<void> _abrirApp(WidgetTester tester, String rota, {Object? extra, bool lo
   ));
   GoRouter.of(tester.element(find.byType(Scaffold).first)).go(rota, extra: extra);
   await tester.pumpAndSettle();
+
+  _tamanho(tester, tamanho);
+  await tester.pumpAndSettle();
 }
 
 /// A home tem animações que nunca terminam: só `pump()`, nunca `pumpAndSettle()`.
-Future<void> _abrirHome(WidgetTester tester) async {
+Future<void> _abrirHome(WidgetTester tester, Size tamanho) async {
+  _tamanho(tester, tamanho);
   final router = GoRouter(routes: [
     GoRoute(
       path: '/',
@@ -164,38 +176,21 @@ Future<void> _abrirHome(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-/// Primeira linha da mensagem de uma exceção do Flutter, para o log não ficar enorme.
-String _resumo(Object excecao) {
-  final linhas = excecao.toString().split('\n').where((l) => l.trim().isNotEmpty);
-  return linhas.take(3).join(' | ');
-}
-
 void _conferir(WidgetTester tester) {
-  // `takeException()` devolve só a primeira exceção; o laço recolhe todas.
-  final excecoes = <Object>[];
-  for (Object? e = tester.takeException(); e != null; e = tester.takeException()) {
-    excecoes.add(e);
-  }
-  expect(
-    excecoes,
-    isEmpty,
-    reason: 'o layout estourou (${excecoes.length}): ${excecoes.map(_resumo).join(' || ')}',
-  );
-
+  expect(tester.takeException(), isNull, reason: 'o layout estourou');
   final rolagemHorizontal = find.byWidgetPredicate((w) =>
       (w is ScrollView && w.scrollDirection == Axis.horizontal) ||
       (w is SingleChildScrollView && w.scrollDirection == Axis.horizontal));
-  final achados = rolagemHorizontal.evaluate().map((e) => e.widget.runtimeType).toList();
-
-  expect(rolagemHorizontal, findsNothing, reason: 'a tela rola na horizontal: $achados');
+  expect(rolagemHorizontal, findsNothing, reason: 'a tela rola na horizontal');
 }
 
 void main() {
-  final telas = <String, Future<void> Function(WidgetTester)>{
+  final telas = <String, Future<void> Function(WidgetTester, Size)>{
     'a home': _abrirHome,
-    'a reserva': (t) => _abrirApp(t, '/reserva', extra: _horario()),
-    'a confirmação': (t) => _abrirApp(
+    'a reserva': (t, tam) => _abrirApp(t, tam, '/reserva', extra: _horario()),
+    'a confirmação': (t, tam) => _abrirApp(
           t,
+          tam,
           '/sucesso',
           extra: ReservaConfirmada(
             id: 42,
@@ -207,16 +202,15 @@ void main() {
             telefone: '31999990000',
           ),
         ),
-    'o login': (t) => _abrirApp(t, '/login'),
-    'o painel': (t) => _abrirApp(t, '/admin', logado: true),
-    'as reservas do proprietário': (t) => _abrirApp(t, '/admin/reservas', logado: true),
+    'o login': (t, tam) => _abrirApp(t, tam, '/login'),
+    'o painel': (t, tam) => _abrirApp(t, tam, '/admin', logado: true),
+    'as reservas do proprietário': (t, tam) => _abrirApp(t, tam, '/admin/reservas', logado: true),
   };
 
   for (final tela in telas.entries) {
     for (final tamanho in tamanhos) {
       testWidgets('${tela.key} cabe em ${tamanho.width.toInt()} px (CT-RNF12-01)', (tester) async {
-        _tamanho(tester, tamanho);
-        await tela.value(tester);
+        await tela.value(tester, tamanho);
 
         _conferir(tester);
       });
