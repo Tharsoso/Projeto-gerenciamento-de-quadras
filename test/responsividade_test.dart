@@ -22,6 +22,9 @@ import 'package:gqt/services/quadras_service.dart';
 /// Flutter ("overflowed by N pixels"), que `tester.takeException()` devolve. A rolagem
 /// horizontal é procurada nos widgets que a criam (`ListView`, `SingleChildScrollView` etc.).
 ///
+/// Quando um teste falha, a mensagem diz qual foi a causa (overflow ou rolagem horizontal),
+/// qual widget estourou e quais widgets rolam na horizontal.
+///
 /// As telas de preços, feriados e faturamento têm gráficos e tabelas com rolagem horizontal
 /// própria e são conferidas à mão (docs/atividade-6.5-testes-nao-funcionais.md).
 
@@ -161,12 +164,30 @@ Future<void> _abrirHome(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 100));
 }
 
+/// Primeira linha da mensagem de uma exceção do Flutter, para o log não ficar enorme.
+String _resumo(Object excecao) {
+  final linhas = excecao.toString().split('\n').where((l) => l.trim().isNotEmpty);
+  return linhas.take(3).join(' | ');
+}
+
 void _conferir(WidgetTester tester) {
-  expect(tester.takeException(), isNull, reason: 'o layout estourou');
+  // `takeException()` devolve só a primeira exceção; o laço recolhe todas.
+  final excecoes = <Object>[];
+  for (Object? e = tester.takeException(); e != null; e = tester.takeException()) {
+    excecoes.add(e);
+  }
+  expect(
+    excecoes,
+    isEmpty,
+    reason: 'o layout estourou (${excecoes.length}): ${excecoes.map(_resumo).join(' || ')}',
+  );
+
   final rolagemHorizontal = find.byWidgetPredicate((w) =>
       (w is ScrollView && w.scrollDirection == Axis.horizontal) ||
       (w is SingleChildScrollView && w.scrollDirection == Axis.horizontal));
-  expect(rolagemHorizontal, findsNothing, reason: 'a tela rola na horizontal');
+  final achados = rolagemHorizontal.evaluate().map((e) => e.widget.runtimeType).toList();
+
+  expect(rolagemHorizontal, findsNothing, reason: 'a tela rola na horizontal: $achados');
 }
 
 void main() {
