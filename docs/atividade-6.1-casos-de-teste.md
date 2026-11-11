@@ -13,7 +13,7 @@ Ele serve de base para as outras tasks da frente de qualidade:
 | 6.2 | Casos da área pública: já cobertos por `consulta_horarios_test.dart` e `sucesso_test.dart` |
 | 6.3 | Casos da área administrativa: já cobertos por `admin_acesso_test.dart` e pelos testes de cada módulo |
 | 6.4 | Regras do banco: `supabase/testes/reservas.sql`. Jornadas entre telas: `jornadas_test.dart`. Teste do sistema completo (manual): casos marcados com "a fazer na 6.4 (sistema)" |
-| 6.5 | Casos de requisitos não funcionais (seção 5) |
+| 6.5 | Casos de requisitos não funcionais (seção 5): `responsividade_test.dart`, `contraste_test.dart`, `supabase/testes/desempenho.sql` e as medições manuais de `atividade-6.5-testes-nao-funcionais.md` |
 | 6.7 | O roteiro de aceitação com o proprietário parte dos cenários principais de cada H |
 
 ## 2. Como os casos foram derivados
@@ -44,9 +44,9 @@ Ele serve de base para as outras tasks da frente de qualidade:
 | CT-H1-06 | Principal | Quando toca em um horário livre | Abre a reserva já com quadra, data, hora e valor | Alta | `consulta_horarios_test.dart` ("tocar em um horário livre…") |
 | CT-H1-07 | Borda | Quando escolhe um dia em que nenhuma quadra funciona | Mostra "FECHADA NESTE DIA" e a orientação de escolher outra data | Média | `consulta_horarios_test.dart` ("dia sem quadras…") |
 | CT-H1-08 | Erro | Quando a consulta falha (sem conexão) | Mostra "Erro ao carregar" e o botão "Tentar novamente" | Média | `consulta_horarios_test.dart` ("falha na consulta…") |
-| CT-H1-09 | Principal | Quando a consulta não deve expor dados de clientes | A resposta da consulta não traz nome nem telefone | Alta | a fazer na 6.5<br>`supabase/testes/reservas.sql` |
+| CT-H1-09 | Principal | Quando a consulta não deve expor dados de clientes | A resposta da consulta não traz nome nem telefone | Alta | `supabase/testes/reservas.sql`<br>manual: curl com a anon key (seção 8 da 6.5) |
 | CT-H1-10 | Principal | Quando troca de dia pelas setas ou pelo botão HOJE | A consulta recarrega para o dia escolhido | Alta | `consulta_horarios_test.dart` ("a seta ‹ não volta…")<br>`consulta_horarios_test.dart` ("o botão HOJE volta…") |
-| CT-H1-11 | Principal | Quando outro cliente reserva enquanto a consulta está aberta | A consulta recarrega sozinha e o horário deixa de ser livre | Alta | `consulta_horarios_test.dart` ("quando o Realtime avisa…")<br>a fazer na 6.5 |
+| CT-H1-11 | Principal | Quando outro cliente reserva enquanto a consulta está aberta | A consulta recarrega sozinha e o horário deixa de ser livre | Alta | `consulta_horarios_test.dart` ("quando o Realtime avisa…")<br>manual: ST-04 da 6.4 (tempo até a tela) |
 
 ### H2 · Agendar horário sem login (RF04, RF05, RF06, RF08, RF20)
 
@@ -135,7 +135,7 @@ Ele serve de base para as outras tasks da frente de qualidade:
 | CT-H7-06 | Alternativo | Quando acessa uma rota /admin sem estar logado | É levado para o login (todas as rotas /admin/*) | Alta | `login_test.dart` ("acesso direto a /admin sem login…")<br>`admin_acesso_test.dart` ("sem login vai para o login…") |
 | CT-H7-07 | Borda | Quando já está logado e abre /login | Vai direto para o painel | Baixa | `login_test.dart` ("logado em /login vai direto para o painel…") |
 | CT-H7-08 | Principal | Quando clica em Sair | A sessão é encerrada | Alta | `login_test.dart` ("botão Sair encerra a sessão…") |
-| CT-H7-09 | Principal | Quando a senha é guardada | É guardada com hash (bcrypt/Argon2), nunca em texto puro | Alta | a fazer na 6.5 |
+| CT-H7-09 | Principal | Quando a senha é guardada | É guardada com hash (bcrypt/Argon2), nunca em texto puro | Alta | manual: conferir no Supabase Auth (seção 8 da 6.5) |
 | CT-H7-10 | Principal | Dado que está na home pública, quando toca no ícone "Área do proprietário" | Vai para a tela de login | Média | `consulta_horarios_test.dart` ("o ícone da área do proprietário…") |
 | CT-H7-11 | Principal | Quando o proprietário abre o painel | Mostra os sete módulos: quadras, horários, preços, bloqueios, reservas, faturamento e feriados | Alta | `admin_acesso_test.dart` ("o painel mostra os sete módulos…") |
 | CT-H7-12 | Principal | Quando toca em um módulo do painel | Abre a tela daquele módulo | Alta | `admin_acesso_test.dart` ("abre a tela do módulo…") |
@@ -204,25 +204,25 @@ Ele serve de base para as outras tasks da frente de qualidade:
 
 | ID | RNF | Dado / Quando | Resultado esperado | Prio. | Verificação |
 |---|---|---|---|---|---|
-| CT-RNF04-01 | RNF04 | Visitante anônimo tenta ler reservas | Nenhum nome ou telefone é visível | Alta | a fazer na 6.5<br>`supabase/testes/reservas.sql` |
+| CT-RNF04-01 | RNF04 | Visitante anônimo tenta ler reservas | Nenhum nome ou telefone é visível | Alta | `supabase/testes/reservas.sql`<br>manual: curl com a anon key (seção 8 da 6.5) |
 | CT-RNF04-02 | RNF04 | Reserva com mais de 12 meses | Dados pessoais anonimizados e motivo de cancelamento apagado | Alta | `agendamentos_test.dart` ("dados anonimizados…")<br>`supabase/testes/lgpd.sql` |
 | CT-RNF05-01 | RNF05 | 30 minutos sem interação | Sessão expira (ver CT-H7-04) | Alta | `login_test.dart` ("30 min sem interação…")<br>`admin_acesso_test.dart` ("30 min sem interação em…") |
-| CT-RNF08-01 | RNF08 | Outro cliente reserva ou o proprietário bloqueia um horário | A consulta aberta reflete a mudança em até 5 segundos | Alta | `consulta_horarios_test.dart` ("quando o Realtime avisa…")<br>a fazer na 6.5 |
+| CT-RNF08-01 | RNF08 | Outro cliente reserva ou o proprietário bloqueia um horário | A consulta aberta reflete a mudança em até 5 segundos | Alta | `consulta_horarios_test.dart` ("quando o Realtime avisa…")<br>`supabase/testes/desempenho.sql` ("parte do banco…")<br>manual: ST-04 da 6.4 (tempo até a tela) |
 | CT-RNF10-01 | RNF10 | Reserva concluída sem usar o link do WhatsApp | A reserva vale do mesmo jeito (ver CT-H6-06) | Média | `sucesso_test.dart` ("a tela de sucesso mostra o código…")<br>a fazer na 6.7 |
-| CT-RNF11-01 | RNF11 | Abrir o sistema nas 2 últimas versões de Chrome, Firefox, Edge e Safari | Consulta, reserva e login funcionam | Média | a fazer na 6.5 |
-| CT-RNF12-01 | RNF12 | Telas entre 360 px e 1920 px | Sem rolagem horizontal e utilizáveis | Alta | `agendamentos_test.dart` ("cabe na tela de um celular…")<br>`bloqueios_test.dart` ("cabe em celular (360px)…")<br>`horarios_test.dart` ("cabe em celular (360px)…")<br>a fazer na 6.5 |
-| CT-RNF13-01 | RNF13 | Disponibilidade do sistema no mês | Pelo menos 99% | Baixa | a fazer na 6.5 |
-| CT-RNF14-01 | RNF14 | Backup diário do banco | Retenção de 30 dias e teste de restauração mensal | Média | a fazer na 6.5 |
+| CT-RNF11-01 | RNF11 | Abrir o sistema nas 2 últimas versões de Chrome, Firefox, Edge e Safari | Consulta, reserva e login funcionam | Média | manual: roteiro da seção 6 da 6.5 |
+| CT-RNF12-01 | RNF12 | Telas entre 360 px e 1920 px | Sem rolagem horizontal e utilizáveis | Alta | `agendamentos_test.dart` ("cabe na tela de um celular…")<br>`bloqueios_test.dart` ("cabe em celular (360px)…")<br>`horarios_test.dart` ("cabe em celular (360px)…")<br>`responsividade_test.dart` ("cabe em…")<br>manual: preços, feriados e faturamento (seção 4 da 6.5) |
+| CT-RNF13-01 | RNF13 | Disponibilidade do sistema no mês | Pelo menos 99% | Baixa | manual: monitoramento (seção 7 da 6.5) |
+| CT-RNF14-01 | RNF14 | Backup diário do banco | Retenção de 30 dias e teste de restauração mensal | Média | `.github/workflows/backup.yml`<br>`.github/workflows/restauracao.yml`<br>manual: execuções na aba Actions (seção 7 da 6.5) |
 | CT-RNF15-01 | RNF15 | Datas, horas e valores | Fuso America/Sao_Paulo, interface em pt-BR e valores no formato R$ 0,00 | Média | `fuso_test.dart` ("é sempre UTC−3…")<br>`fuso_test.dart` ("moeda e data no formato brasileiro…") |
-| CT-RNF16-01 | RNF16 | Relatório de 12 meses | Gerado em até 5 segundos | Média | a fazer na 6.5 |
-| CT-RNF17-01 | RNF17 | Rodar flutter test --coverage e flutter analyze | Cobertura mínima de 70% e 0 erros no analyze | Média | a fazer na 6.5 |
-| CT-RNF18-01 | RNF18 | Contraste das cores e tamanho dos botões | Contraste WCAG 2.1 AA e áreas de toque de pelo menos 48x48 px | Média | a fazer na 6.5 |
+| CT-RNF16-01 | RNF16 | Relatório de 12 meses | Gerado em até 5 segundos | Média | `supabase/testes/desempenho.sql` ("CT-RNF16-01…")<br>manual: tempo na tela (seção 5 da 6.5) |
+| CT-RNF17-01 | RNF17 | Rodar flutter test --coverage e flutter analyze | Cobertura mínima de 70% e 0 erros no analyze | Média | `.github/workflows/ci.yml` ("flutter analyze…")<br>manual: cobertura com flutter test --coverage (seção 9 da 6.5) |
+| CT-RNF18-01 | RNF18 | Contraste das cores e tamanho dos botões | Contraste WCAG 2.1 AA e áreas de toque de pelo menos 48x48 px | Média | `contraste_test.dart` ("contraste de pelo menos 4,5:1…")<br>manual: área de toque e Lighthouse (seção 3 da 6.5) |
 
 ## 6. Matriz de rastreabilidade
 
 ### 6.1 História → casos → testes existentes
 
-| História | Casos | Já com teste em `test/` | A fazer (6.2 a 6.7) | Arquivos de teste existentes |
+| História | Casos | Já com teste em `test/` | Manual ou a fazer | Arquivos de teste existentes |
 |---|---|---|---|---|
 | H1 · Consultar quadras e horários | 11 | 11 | 0 | `consulta_horarios_test.dart`, `supabase/testes/reservas.sql` |
 | H2 · Agendar horário sem login | 15 | 15 | 0 | `jornadas_test.dart`, `reserva_test.dart`, `sucesso_test.dart`, `supabase/testes/reservas.sql` |
@@ -237,7 +237,7 @@ Ele serve de base para as outras tasks da frente de qualidade:
 | H11 · Consultar agendamentos realizados | 8 | 8 | 0 | `agendamentos_test.dart`, `jornadas_test.dart`, `supabase/testes/reservas.sql` |
 | H12 · Relatório de locações por período | 8 | 8 | 0 | `faturamento_test.dart`, `supabase/testes/reservas.sql` |
 | **Total (H1–H12)** | **108** | **107** | **1** | |
-| Requisitos não funcionais | 13 | 7 | 6 | |
+| Requisitos não funcionais | 13 | 11 | 2 | |
 
 Um caso conta como "já com teste" quando pelo menos um teste existente o verifica. Vários ainda têm uma parte a fazer (por exemplo, a regra no banco), indicada na coluna Verificação da seção 4.
 
@@ -288,9 +288,10 @@ Todos os RF de RF01 a RF23 e os 12 RNF do Documento de Visão têm pelo menos um
 1. **Rótulos trocados nos testes de reserva.** O `reserva_test.dart` chama o teste da reserva válida de "(H1)", mas no Documento de Visão a consulta é H1, a reserva é H2 e o limite diário é H10. Vale renomear para o rastreio bater com este documento.
 2. **RNF fora do documento.** O código e a documentação citam RNF06 (log de cancelamento) e RNF07 (valor congelado na reserva), que não estão na tabela da seção 5 do Documento de Visão. Os dois comportamentos têm casos aqui (CT-H3-09 e CT-H4-10), mas o documento precisa ser atualizado.
 3. **Premissa em aberto.** O Documento de Visão ainda traz "Há um único usuário administrador [Validar com o grupo]". O teste de aceitação (6.7) conta com um só proprietário.
-4. **Responsividade medida só em 360 px.** O RNF12 pede de 360 px a 1920 px, mas os testes de tela atuais usam 360 px. A 6.5 precisa ampliar.
-5. **Metas de qualidade ainda sem medição.** O RNF17 (cobertura mínima de 70% e 0 erros no `flutter analyze`) ainda não foi medido. É medido na 6.5.
-6. **Home sem teste, resolvido na 6.2.** A consulta pública não tinha teste de horários porque o `assinarOcupacoes` do `QuadrasService` não podia ser trocado por um falso. A 6.2 tornou o retorno opcional (`RealtimeChannel?`) e criou `consulta_horarios_test.dart`.
+4. **Responsividade ampliada na 6.5.** O RNF12 pede de 360 px a 1920 px, e os testes de cada tela usavam só 360 px. O `responsividade_test.dart` passou a conferir 6 telas em 4 larguras; as telas de preços, feriados e faturamento são conferidas à mão. A home em 360 px está ignorada no teste automático até ser conferida no navegador (a fonte de teste é mais larga que a real).
+5. **Cobertura de testes ainda sem número.** O RNF17 pede cobertura mínima de 70%. O `flutter analyze` já é verificado no CI, mas a cobertura só passa a ser medida com `flutter test --coverage` (procedimento na seção 9 da 6.5).
+6. **Contraste abaixo do mínimo em dois estados.** Os chips "Passou" (2,76:1) e "Sem preço" (3,34:1) ficam abaixo de 4,5:1 (RNF18). Detalhes e sugestão na seção 3 da 6.5.
+7. **Home sem teste, resolvido na 6.2.** A consulta pública não tinha teste de horários porque o `assinarOcupacoes` do `QuadrasService` não podia ser trocado por um falso. A 6.2 tornou o retorno opcional (`RealtimeChannel?`) e criou `consulta_horarios_test.dart`.
 
 ## 8. Como conferir
 
